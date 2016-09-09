@@ -1,0 +1,137 @@
+class Interpreter:
+    def __init__(self, inp: str):
+        self.opcodes = {"MNZ": self.mov_not_zero,
+                        "MLZ": self.mov_less_zero,
+                        "ADD": self.add,
+                        "SUB": self.sub,
+                        "AND": self._and,
+                        "OR": self._or,
+                        "XOR": self.xor,
+                        "ANT": self.and_not,
+                        "SL": self.shift_left,
+                        "SRL": self.shift_right_logic,
+                        "SRA": self.shift_right_arith,
+                        }
+        self.ram = RAM()
+        self.tokens = [self.tokenise(line) for line in inp.splitlines()]
+
+    def tokenise(self, line):
+        # Remove comments
+        code, semicolon, comment = line.partition(";")
+        # Lines must have a semicolon
+        if not semicolon:
+            raise SyntaxError("%s: No semicolon ending"%(line))
+        line_no, opcode_id, *operands, dest = code.split()
+        line_no = int(line_no.rstrip("."))
+        opcode = self.opcodes[opcode_id]
+        dest = int(dest)
+        operands = list(map(self.parse_operand, operands))
+        return opcode, [*operands, dest]
+
+    def parse_operand(self, operand: str) -> "RamLocation":
+        return RamLocation(self.ram, operand)
+
+    def mov_not_zero(self, test: "RamLocation", value: "RamLocation", dest: int):
+        if test() != 0:
+            self.ram[dest] = value()
+
+    def mov_less_zero(self, test: "RamLocation", value: "RamLocation", dest: int):
+        if not self.ram.is_non_neg(test()):
+            self.ram[dest] = value()
+
+    def add(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() + val2()
+
+    def sub(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() - val2()
+
+    def _and(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() & val2()
+
+    def _or(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() | val2()
+
+    def xor(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() ^ val2()
+
+    def and_not(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+            self.ram[dest] = val1() & ~val2()
+
+    def shift_left(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() << val2()
+
+    def shift_right_logic(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = self.ram.unfix_value(val1()) >> val2()
+
+    def shift_right_arith(self, val1: "RamLocation", val2: "RamLocation", dest: int):
+        self.ram[dest] = val1() >> val2()
+
+    def run(self):
+        len_tokens = len(self.tokens)
+        while 1:
+            opcode, operands = self.tokens[self.ram._contents[0]]
+            opcode(*operands)
+            self.ram._contents[0] += 1
+            print(self.ram)
+            if self.ram._contents[0] >= len_tokens:
+                break
+        print("Done!")
+
+
+class RAM():
+    address_size = 16
+    negative_bit = 1 << (address_size - 1)
+    max_value = (1 << address_size) - 1
+
+    def __init__(self):
+        self._contents = {0:0}
+
+    def __repr__(self):
+        return repr(self._contents)
+
+    def __str__(self):
+        rtn = ["RAMDUMP"]
+        for key in sorted(self._contents.keys()):
+            rtn.append("%d: %d"%(key, self._contents[key]))
+        return "\n".join(rtn)
+
+    def __getitem__(self, item):
+        return self._contents.get(item, 0)
+
+    def __setitem__(self, key, value):
+        self._contents[key] = self.fix_value(value)
+        if value == 0:
+            del self._contents[key]
+
+    def fix_value(self, value):
+        if value < 0:
+            value = self.max_value+value+1
+        return value & self.max_value
+
+    def unfix_value(self, value):
+        if not self.is_non_neg(value):
+            value -= self.max_value + 1
+        return value
+
+    def is_non_neg(self, value):
+        return value & self.negative_bit == 0
+
+
+class RamLocation():
+    def __init__(self, ram: RAM, address: str):
+        self.ram = ram
+        self.layers = "ABC".find(address[0]) + 1
+        self.address = self.ram.fix_value(int(address[self.layers > 0:]))
+
+    def __call__(self):
+        if self.layers == 0:
+            return self.address
+        value = self.address
+        for i in range(self.layers):
+            value = self.ram[value]
+        return value
+
+if __name__ == "__main__":
+    with open("primes.qftasm") as assembly_file:
+        interpreter = Interpreter(assembly_file.read())
+        interpreter.run()
