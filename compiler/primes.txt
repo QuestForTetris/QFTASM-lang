@@ -1,15 +1,16 @@
 struct linked_list
-    num
+    int num
     *linked_list next
 
 sub is_prime(int num) -> int
-    for (i = 2; i <= num; i++)
+    for (int i = 2; i <= num; i += 1)
         if (num % i == 0)
             return true
     return false
 
 sub main
-    cur_test = 2
+    int cur_test = 2
+    int cur_prime
     while (true)
         if (is_prime(cur_test))
             cur_prime = cur_test

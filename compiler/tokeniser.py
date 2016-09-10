@@ -1,6 +1,11 @@
 import tokenize
-from tokeniser_struct import StructTokeniser
-from tokeniser_sub import SubTokeniser
+from tokenisers.struct import StructTokeniser
+from tokenisers.sub import SubTokeniser
+from tokenisers.dedent import DedentTokeniser
+from tokenisers.for_loop import ForTokeniser
+
+
+DedentTokeniser.keywords["for"] = ForTokeniser
 
 struct_tokens = {"struct": StructTokeniser,
                  "sub": SubTokeniser}
