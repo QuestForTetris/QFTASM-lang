@@ -1,0 +1,43 @@
+<grammar start="file">
+    <define name="file">
+        <block>
+            <repeat name="stmts">
+                <block name="newline">
+                    <token exact_type="NEWLINE"/>
+                </block>
+                <block name="struct">
+                    <stmt name="struct"/>
+                </block>
+            </repeat>
+            <token exact_type="ENDMARKER"/>
+        </block>
+    </define>
+    <define name="struct">
+        <block>
+            <token exact_type="NAME" string="struct"/>
+            <token exact_type="NAME" var="name"/>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <repeat name="vars">
+                <block name="type">
+                    <stmt name="type_var"/>
+                </block>
+                <block name="_">
+                    <token exact_type="NEWLINE"/>
+                </block>
+            </repeat>
+            <token exact_type="DEDENT"/>
+        </block>
+    </define>
+    <define name="type_var">
+        <block name="type">
+            <token exact_type="NAME" var="type"/>
+            <token exact_type="NAME" var="name"/>
+        </block>
+        <block name="pointer_type">
+            <token exact_type="STAR"/>
+            <token exact_type="NAME" var="type"/>
+            <token exact_type="NAME" var="name"/>
+        </block>
+    </define>
+</grammar>
