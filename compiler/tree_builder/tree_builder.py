@@ -28,14 +28,18 @@ class DefineParser:
         self.blocks = [BlockParser(block) for block in self._root.findall("block")]
 
     def accepts(self, tokens):
-        #print("StartDef", self.name)
+        # print("StartDef", self.name)
+        # if self.name == "if":
+        #    print("Tokens", [tokenize.tok_name[token.exact_type]for token in tokens])
+        #    print("Tokens", [token.string for token in tokens])
         for block in self.blocks:
             new_tokens, accepts = block.accepts(tokens)
+            # print("B", block, "A", accepts)
             if accepts:
                 grammar_tree = GrammarTree(self.name, accepts)
-                #print("EndDef", self.name, grammar_tree)
+                # print("EndDef", self.name)
                 return new_tokens, grammar_tree
-        #print("FailDef", self.name)
+        # print("FailDef", self.name)
         return tokens, False
 
 
@@ -54,17 +58,23 @@ class BlockParser:
             self.stmts.append(self.parsers[stmt.tag](stmt))
         assert self._root.tag == "block"
 
+    def __repr__(self):
+        return str(self.stmts)
+
     def accepts(self, tokens):
         stmts = []
         for statement in self.stmts:
             new_tokens, accepts = statement.accepts(tokens)
-            #print("BlockParser", statement, tokens, accepts)
             if not accepts:
                 return tokens, False
-            if isinstance(statement, (RepeatParser, OptionalParser)):
+            if isinstance(statement, RepeatParser):
                 accepts = [GrammarTree(statement.name+"_"+str(i), stmt) for i, stmt in enumerate(accepts) if stmt is not True]
                 accepts = (statement.name, accepts)
-            stmts.append(accepts)
+                stmts.append(accepts)
+            elif isinstance(statement, OptionalParser):
+                stmts.extend(accepts)
+            else:
+                stmts.append(accepts)
             tokens = new_tokens
         if "name" in self._root.attrib:
             name = self._root.attrib["name"]
@@ -88,8 +98,7 @@ class RepeatParser:
             new_tokens, block_accepts = block.accepts(tokens)
             if block_accepts:
                 accepts.append(block_accepts)
-                tokens, accepts = self.accepts(new_tokens, accepts)
-                return tokens, accepts
+                return self.accepts(new_tokens, accepts)
         if accepts:
             return tokens, accepts
         else:
@@ -125,6 +134,9 @@ class StmtParser:
         self._root = root
         assert self._root.tag == "stmt"
         self.name = self._root.attrib["name"]
+
+    def __repr__(self):
+        return "StmtParser(%s)"%self.name
 
     def accepts(self, tokens):
         new_tokens, accepts = grammar_parser.stmts[self.name].accepts(tokens)
@@ -176,5 +188,7 @@ if __name__ == "__main__":
     grammar_parser = GrammarParser()
     with open("primes.txt", "rb") as inp:
         tokens = tokenise(inp)
+        #print([tokenize.tok_name[token.type]for token in tokens])
         #print([tokenize.tok_name[token.exact_type]for token in tokens])
+        #print([token.string for token in tokens])
         print(grammar_parser.accepts(tokens))
