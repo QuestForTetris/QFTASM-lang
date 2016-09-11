@@ -8,6 +8,9 @@
                 <block name="struct">
                     <stmt name="struct"/>
                 </block>
+                <block name="sub">
+                    <stmt name="sub"/>
+                </block>
             </repeat>
             <token exact_type="ENDMARKER"/>
         </block>
@@ -29,6 +32,237 @@
             <token exact_type="DEDENT"/>
         </block>
     </define>
+    <define name="sub">
+        <block>
+            <token exact_type="NAME" string="sub"/>
+            <token exact_type="NAME" var="name"/>
+            <optional name="parameters">
+                <stmt name="parameters"/>
+            </optional>
+            <optional name="rtn_type">
+                <token string="->"/>
+                <token exact_type="NAME" var="rtn_type"/>
+            </optional>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <stmt name="stmts"/>
+            <token exact_type="DEDENT"/>
+        </block>
+    </define>
+    <define name="parameters">
+        <block>
+            <token exact_type="LPAR"/>
+            <stmt name="type_var"/>
+            <token exact_type="RPAR"/>
+        </block>
+    </define>
+    <define name="arg_list">
+        <block>
+            <token exact_type="LPAR"/>
+            <stmt name="generic_value"/>
+            <token exact_type="RPAR"/>
+        </block>
+    </define>
+    <define name="stmts">
+        <block>
+            <repeat name="stmts">
+                <block name="stmt">
+                    <stmt name="simple_stmt"/>
+                </block>
+                <block name="_">
+                    <token exact_type="NEWLINE"/>
+                </block>
+            </repeat>
+        </block>
+    </define>
+    <define name="simple_stmt">
+        <block name="assign">
+            <stmt name="assign"/>
+        </block>
+        <block name="mod_assign">
+            <stmt name="mod_assign"/>
+        </block>
+        <block name="while_do">
+            <stmt name="while_do"/>
+        </block>
+        <block name="for">
+            <stmt name="for"/>
+        </block>
+        <block name="if">
+            <stmt name="if"/>
+        </block>
+        <block name="return">
+            <stmt name="return"/>
+        </block>
+        <block name="generic_value">
+            <stmt name="generic_value"/>
+        </block>
+    </define>
+    <define name="while_do">
+        <block>
+            <token exact_type="NAME" string="while"/>
+            <stmt name="generic_value" var="condition"/>
+            <token exact_type="NAME" string="do"/>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <stmt name="stmts" var="stmts"/>
+            <token exact_type="DEDENT"/>
+        </block>
+    </define>
+    <define name="for">
+        <block>
+            <token exact_type="NAME" string="for"/>
+            <token exact_type="LPAR"/>
+            <stmt name="assign" var="setup"/>
+            <token exact_type="SEMI"/>
+            <stmt name="generic_value" var="condition"/>
+            <token exact_type="SEMI"/>
+            <stmt name="mod_assign" var="final"/>
+            <token exact_type="RPAR"/>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <stmt name="stmts" var="stmts"/>
+            <token exact_type="DEDENT"/>
+        </block>
+    </define>
+    <define name="if">
+        <block>
+            <token exact_type="NAME" string="if"/>
+            <stmt name="generic_value" var="condition"/>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <stmt name="stmts" var="stmts"/>
+            <token exact_type="DEDENT"/>
+        </block>
+    </define>
+    <define name="assign">
+        <block>
+            <stmt name="generic_var" var="var"/>
+            <token exact_type="EQUAL"/>
+            <stmt name="generic_value" var="value"/>
+        </block>
+    </define>
+    <define name="return">
+        <block>
+            <token exact_type="NAME" string="return"/>
+            <stmt name="generic_value"/>
+        </block>
+    </define>
+    <define name="mod_assign">
+        <block name="operator">
+            <stmt name="generic_var" var="var"/>
+            <stmt name="aug_assign"/>
+            <stmt name="generic_value" var="value"/>
+        </block>
+    </define>
+    <define name="aug_assign">
+        <block name="+=">
+            <token exact_type="PLUSEQUAL"/>
+        </block>
+        <block name="-=">
+            <token exact_type="MINEQUAL"/>
+        </block>
+        <block name="*=">
+            <token exact_type="STAREQUAL"/>
+        </block>
+        <block name="/=">
+            <token exact_type="SLASHEQUAL"/>
+        </block>
+        <block name="%=">
+            <token exact_type="PERCENTEQUAL"/>
+        </block>
+        <block name="&amp;=">
+            <token exact_type="AMPEREQUAL"/>
+        </block>
+        <block name="|=">
+            <token exact_type="VBAREQUAL"/>
+        </block>
+        <block name="^=">
+            <token exact_type="CIRCUMFLEXEQUAL"/>
+        </block>
+        <block name="&lt;&lt;=">
+            <token exact_type="LEFTSHIFTEQUAL"/>
+        </block>
+        <block name="&gt;&gt;=">
+            <token exact_type="RIGHTSHIFTEQUAL"/>
+        </block>
+        <block name="**=">
+            <token exact_type="DOUBLESTAREQUAL"/>
+        </block>
+    </define>
+    <define name="operator">
+        <block name="+">
+            <token exact_type="PLUS"/>
+        </block>
+        <block name="-">
+            <token exact_type="MINUS"/>
+        </block>
+        <block name="*">
+            <token exact_type="STAR"/>
+        </block>
+        <block name="/">
+            <token exact_type="SLASH"/>
+        </block>
+        <block name="|">
+            <token exact_type="VBAR"/>
+        </block>
+        <block name="&amp;">
+            <token exact_type="AMPER"/>
+        </block>
+        <block name="%">
+            <token exact_type="PERCENT"/>
+        </block>
+        <block name="~">
+            <token exact_type="TILDE"/>
+        </block>
+        <block name="^">
+            <token exact_type="CIRCUMFLEX"/>
+        </block>
+        <block name="&lt;">
+            <token exact_type="LESS"/>
+        </block>
+        <block name="&gt;">
+            <token exact_type="GREATER"/>
+        </block>
+    </define>
+    <define name="generic_value">
+        <block name="arith">
+            <stmt name="var_literal"/>
+            <stmt name="operator"/>
+            <stmt name="generic_value"/>
+        </block>
+        <block name="not">
+            <token exact_type="NAME" string="not"/>
+            <stmt name="generic_value" var="value"/>
+        </block>
+        <block name="sub_call">
+            <stmt name="sub_call"/>
+        </block>
+        <block name="var_literal">
+            <stmt name="var_literal"/>
+        </block>
+    </define>
+    <define name="var_literal">
+        <block name="brackets">
+            <token exact_type="LPAR"/>
+            <stmt name="generic_value"/>
+            <token exact_type="RPAR"/>
+        </block>
+        <block name="var">
+            <stmt name="generic_var"/>
+        </block>
+        <block name="literal">
+            <stmt name="generic_literal"/>
+        </block>
+    </define>
+    <define name="generic_var">
+        <block name="type">
+            <stmt name="type_var"/>
+        </block>
+        <block name="untype">
+            <stmt name="var"/>
+        </block>
+    </define>
     <define name="type_var">
         <block name="type">
             <token exact_type="NAME" var="type"/>
@@ -38,6 +272,22 @@
             <token exact_type="STAR"/>
             <token exact_type="NAME" var="type"/>
             <token exact_type="NAME" var="name"/>
+        </block>
+    </define>
+    <define name="var">
+        <block>
+            <token exact_type="NAME" var="name"/>
+        </block>
+    </define>
+    <define name="generic_literal">
+        <block name="number">
+            <token exact_type="NUMBER" var="value"/>
+        </block>
+    </define>
+    <define name="sub_call">
+        <block>
+            <token exact_type="NAME" var="sub_name"/>
+            <stmt name="arg_list"/>
         </block>
     </define>
 </grammar>
