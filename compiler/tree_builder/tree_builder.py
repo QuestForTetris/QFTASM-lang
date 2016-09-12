@@ -68,7 +68,8 @@ class BlockParser:
             if not accepts:
                 return tokens, False
             if isinstance(statement, RepeatParser):
-                accepts = [GrammarTree(statement.name+"_"+str(i), stmt) for i, stmt in enumerate(accepts) if stmt is not True]
+                filtered = (stmt for stmt in accepts if stmt is not True)
+                accepts = [GrammarTree(statement.name+"_"+str(i), stmt) for i, stmt in enumerate(filtered)]
                 accepts = (statement.name, accepts)
                 stmts.append(accepts)
             elif isinstance(statement, OptionalParser):
@@ -155,19 +156,26 @@ class OptionalParser(BlockParser):
 
     def accepts(self, tokens):
         tokens, accepts = super().accepts(tokens)
-        if not accepts: accepts = [True]
-        return tokens, accepts
+        if not accepts:
+            accepts = [(self.name, False)]
+            return tokens, accepts
+        return tokens, accepts+[(self.name, True)]
 
 
 class GrammarTree:
     def __init__(self, name, vars):
         self.name = name
-        self._list = []
         self._dict = {}
         for var in vars:
             if var is True: continue
             key, value = var
             self._dict[key] = value
+
+    def __getitem__(self, item):
+        return self._dict[item]
+
+    def __contains__(self, item):
+        return item in self._dict
 
     def __repr__(self):
         rtn = "\n".join(repr(key)+": "+repr(value) for key, value in self._dict.items()).splitlines()
@@ -177,18 +185,22 @@ class GrammarTree:
 
 def tokenise(inp):
     tokens = tokenize.tokenize(inp.readline)
+    # Get rid of the encoding token
     next(tokens)
     tokens = list(tokens)
+    # Replace NL tokens with NEWLINE tokens
     for i, token in enumerate(tokens):
         if tokenize.tok_name[token.exact_type] == "NL":
             tokens[i] = type(token)(tokenize.NEWLINE, token.string, token.start, token.end, token.line)
     return tokens
 
-if __name__ == "__main__":
+def build_tree(filename):
+    global grammar_parser
     grammar_parser = GrammarParser()
-    with open("primes.txt", "rb") as inp:
+    with open(filename, "rb") as inp:
         tokens = tokenise(inp)
-        #print([tokenize.tok_name[token.type]for token in tokens])
-        #print([tokenize.tok_name[token.exact_type]for token in tokens])
-        #print([token.string for token in tokens])
-        print(grammar_parser.accepts(tokens))
+        return grammar_parser.accepts(tokens)
+
+
+if __name__ == "__main__":
+    print(build_tree("primes.txt"))

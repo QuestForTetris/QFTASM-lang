@@ -1,0 +1,4 @@
+sub main
+    global int test_global = 2
+    int number = 2
+    number += 1

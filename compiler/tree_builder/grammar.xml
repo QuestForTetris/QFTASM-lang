@@ -94,8 +94,8 @@
         <block name="return">
             <stmt name="return"/>
         </block>
-        <block name="generic_value">
-            <stmt name="generic_value"/>
+        <block name="sub_call">
+            <stmt name="sub_call"/>
         </block>
     </define>
     <define name="while_do">
@@ -265,10 +265,16 @@
     </define>
     <define name="type_var">
         <block name="type">
+            <optional name="global" var="global">
+                <token exact_type="NAME" string="global"/>
+            </optional>
             <token exact_type="NAME" var="type"/>
             <token exact_type="NAME" var="name"/>
         </block>
         <block name="pointer_type">
+            <optional name="global" var="global">
+                <token exact_type="NAME" string="global"/>
+            </optional>
             <token exact_type="STAR"/>
             <token exact_type="NAME" var="type"/>
             <token exact_type="NAME" var="name"/>
