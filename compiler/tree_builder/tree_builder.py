@@ -28,7 +28,8 @@ class DefineParser:
         self.blocks = [BlockParser(block) for block in self._root.findall("block")]
 
     def accepts(self, tokens):
-        # print("StartDef", self.name)
+        global error_msg
+        #print("StartDef", self.name)
         # if self.name == "if":
         #    print("Tokens", [tokenize.tok_name[token.exact_type]for token in tokens])
         #    print("Tokens", [token.string for token in tokens])
@@ -37,9 +38,11 @@ class DefineParser:
             # print("B", block, "A", accepts)
             if accepts:
                 grammar_tree = GrammarTree(self.name, accepts)
-                # print("EndDef", self.name)
+                #print("EndDef", self.name)
+                error_msg = []
                 return new_tokens, grammar_tree
-        # print("FailDef", self.name)
+        error_msg.append((self.name, tokens[0]))
+        #print("FailDef", self.name)
         return tokens, False
 
 
@@ -93,7 +96,7 @@ class RepeatParser:
         self.name = self._root.attrib["name"]
 
     def accepts(self, tokens, accepts=None):
-        if accepts == None:
+        if accepts is None:
             accepts = []
         for block in self.blocks:
             new_tokens, block_accepts = block.accepts(tokens)
@@ -123,7 +126,7 @@ class TokenParser:
             if attr in ("exact_type", "type"):
                 token_value = tokenize.tok_name[token_value]
             if token_value != self.attrib[attr]:
-                #print("TokenFAIL", attr, self.attrib[attr], "was", token_value)
+                # print("TokenFAIL", attr, self.attrib[attr], "was", token_value)
                 return tokens, False
         if "var" in self.attrib:
             return tokens[1:], (self.attrib["var"], tokens[0].string)
@@ -142,6 +145,8 @@ class StmtParser:
     def accepts(self, tokens):
         new_tokens, accepts = grammar_parser.stmts[self.name].accepts(tokens)
         if accepts:
+            if "var" in self._root.attrib:
+                accepts["_stmt_var"] = self._root.attrib["var"]
             return new_tokens, (self.name, accepts)
         return tokens, False
 
@@ -157,9 +162,9 @@ class OptionalParser(BlockParser):
     def accepts(self, tokens):
         tokens, accepts = super().accepts(tokens)
         if not accepts:
-            accepts = [(self.name, False)]
+            accepts = [("_"+self.name, False)]
             return tokens, accepts
-        return tokens, accepts+[(self.name, True)]
+        return tokens, accepts+[("_"+self.name, True)]
 
 
 class GrammarTree:
@@ -171,6 +176,9 @@ class GrammarTree:
             key, value = var
             self._dict[key] = value
 
+    def __setitem__(self, key, value):
+        self._dict[key] = value
+
     def __getitem__(self, item):
         return self._dict[item]
 
@@ -181,6 +189,13 @@ class GrammarTree:
         rtn = "\n".join(repr(key)+": "+repr(value) for key, value in self._dict.items()).splitlines()
         rtn = "\n".join("\t"+i for i in rtn)
         return "GrammarTree %s\n%s\n"%(self.name, rtn)
+
+    def get_stmt(self, var):
+        for key in self._dict:
+            if "_stmt_var" in self._dict[key]:
+                if self._dict[key]["_stmt_var"] == var:
+                    return self._dict[key]
+        raise AttributeError("Tried to get stmt %s from %s"%(var, self))
 
 
 def tokenise(inp):
@@ -196,11 +211,16 @@ def tokenise(inp):
 
 def build_tree(filename):
     global grammar_parser
+    global error_msg
+    error_msg = []
     grammar_parser = GrammarParser()
     with open(filename, "rb") as inp:
         tokens = tokenise(inp)
-        return grammar_parser.accepts(tokens)
-
+        rtn = grammar_parser.accepts(tokens)
+        if rtn is None:
+            #print(error_msg)
+            raise SyntaxError("Bad Syntax")
+        return rtn
 
 if __name__ == "__main__":
     print(build_tree("primes.txt"))

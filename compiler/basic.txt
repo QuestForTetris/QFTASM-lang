@@ -1,4 +1,13 @@
+sub is_prime(int number) -> int
+    for (int i = 2; i < number; i += 1)
+        if not number % i
+            return 0
+    return 1
+
 sub main
-    global int test_global = 2
-    int number = 2
-    number += 1
+    int start = 2
+
+    while 1 do
+        start += 1
+        if is_prime(start)
+            int cur_prime = start

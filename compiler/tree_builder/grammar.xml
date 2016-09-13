@@ -37,7 +37,7 @@
             <token exact_type="NAME" string="sub"/>
             <token exact_type="NAME" var="name"/>
             <optional name="parameters">
-                <stmt name="parameters"/>
+                <stmt name="typed_parameters" var="params"/>
             </optional>
             <optional name="rtn_type">
                 <token string="->"/>
@@ -49,18 +49,42 @@
             <token exact_type="DEDENT"/>
         </block>
     </define>
-    <define name="parameters">
+    <define name="typed_parameters">
         <block>
             <token exact_type="LPAR"/>
             <stmt name="type_var"/>
+            <optional name="further_params">
+                <stmt name="typed_arg_list"/>
+            </optional>
             <token exact_type="RPAR"/>
+        </block>
+    </define>
+    <define name="parameters">
+        <block>
+            <token exact_type="LPAR"/>
+            <stmt name="generic_value"/>
+            <optional name="further_params">
+                <stmt name="arg_list"/>
+            </optional>
+            <token exact_type="RPAR"/>
+        </block>
+    </define>
+    <define name="typed_arg_list">
+        <block>
+            <token exact_type="COMMA"/>
+            <stmt name="type_var"/>
+            <optional name="further_params">
+                <stmt name="typed_arg_list"/>
+            </optional>
         </block>
     </define>
     <define name="arg_list">
         <block>
-            <token exact_type="LPAR"/>
+            <token exact_type="COMMA"/>
             <stmt name="generic_value"/>
-            <token exact_type="RPAR"/>
+            <optional name="further_params">
+                <stmt name="arg_list"/>
+            </optional>
         </block>
     </define>
     <define name="stmts">
@@ -218,6 +242,18 @@
         <block name="^">
             <token exact_type="CIRCUMFLEX"/>
         </block>
+        <block name="==">
+            <token exact_type="EQEQUAL"/>
+        </block>
+        <block name="!=">
+            <token exact_type="NOTEQUAL"/>
+        </block>
+        <block name="&lt;=">
+            <token exact_type="LESSEQUAL"/>
+        </block>
+        <block name="&gt;=">
+            <token exact_type="GREATEREQUAL"/>
+        </block>
         <block name="&lt;">
             <token exact_type="LESS"/>
         </block>
@@ -226,14 +262,14 @@
         </block>
     </define>
     <define name="generic_value">
+        <block name="not">
+            <token exact_type="NAME" string="not"/>
+            <stmt name="generic_value" var="value"/>
+        </block>
         <block name="arith">
             <stmt name="var_literal"/>
             <stmt name="operator"/>
             <stmt name="generic_value"/>
-        </block>
-        <block name="not">
-            <token exact_type="NAME" string="not"/>
-            <stmt name="generic_value" var="value"/>
         </block>
         <block name="sub_call">
             <stmt name="sub_call"/>
@@ -256,10 +292,10 @@
         </block>
     </define>
     <define name="generic_var">
-        <block name="type">
+        <block name="type_var">
             <stmt name="type_var"/>
         </block>
-        <block name="untype">
+        <block name="var">
             <stmt name="var"/>
         </block>
     </define>
@@ -293,7 +329,7 @@
     <define name="sub_call">
         <block>
             <token exact_type="NAME" var="sub_name"/>
-            <stmt name="arg_list"/>
+            <stmt name="parameters"/>
         </block>
     </define>
 </grammar>
