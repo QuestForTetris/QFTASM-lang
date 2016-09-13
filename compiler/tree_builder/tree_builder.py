@@ -1,5 +1,6 @@
 import tokenize
 from xml.etree import ElementTree
+import copy
 
 from typing import Optional
 
@@ -28,8 +29,7 @@ class DefineParser:
         self.blocks = [BlockParser(block) for block in self._root.findall("block")]
 
     def accepts(self, tokens):
-        global error_msg
-        #print("StartDef", self.name)
+        # print("StartDef", self.name)
         # if self.name == "if":
         #    print("Tokens", [tokenize.tok_name[token.exact_type]for token in tokens])
         #    print("Tokens", [token.string for token in tokens])
@@ -38,11 +38,10 @@ class DefineParser:
             # print("B", block, "A", accepts)
             if accepts:
                 grammar_tree = GrammarTree(self.name, accepts)
-                #print("EndDef", self.name)
-                error_msg = []
+                # print("EndDef", self.name)
                 return new_tokens, grammar_tree
-        error_msg.append((self.name, tokens[0]))
-        #print("FailDef", self.name)
+        # print("FailDef", self.name)
+        error_msg.fail_def(new_tokens)
         return tokens, False
 
 
@@ -167,6 +166,24 @@ class OptionalParser(BlockParser):
         return tokens, accepts+[("_"+self.name, True)]
 
 
+class ErrorTree:
+    def __init__(self, filename: str):
+        self.filename = filename
+        self.error = None
+
+    def fail_def(self, new_tokens):
+        if self.error is None or len(new_tokens) < len(self.error):
+            self.error = new_tokens
+
+    def __repr__(self):
+        error_token = self.error[0]
+        rtn = "File %r, line %d\n\t%s\n\t%s"%(self.filename,
+                                              error_token.start[0],
+                                              error_token.line.strip("\n"),
+                                              " "*error_token.start[1] + "^")
+        return rtn
+
+
 class GrammarTree:
     def __init__(self, name, vars):
         self.name = name
@@ -209,17 +226,17 @@ def tokenise(inp):
             tokens[i] = type(token)(tokenize.NEWLINE, token.string, token.start, token.end, token.line)
     return tokens
 
+
 def build_tree(filename):
     global grammar_parser
     global error_msg
-    error_msg = []
+    error_msg = ErrorTree(filename)
     grammar_parser = GrammarParser()
     with open(filename, "rb") as inp:
         tokens = tokenise(inp)
         rtn = grammar_parser.accepts(tokens)
         if rtn is None:
-            #print(error_msg)
-            raise SyntaxError("Bad Syntax")
+            raise SyntaxError("Bad Syntax\n%s"%error_msg)
         return rtn
 
 if __name__ == "__main__":
