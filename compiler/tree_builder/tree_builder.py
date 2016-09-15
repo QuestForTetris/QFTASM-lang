@@ -1,6 +1,5 @@
 import tokenize
 from xml.etree import ElementTree
-import copy
 
 from typing import Optional
 
@@ -224,6 +223,7 @@ def tokenise(inp):
     for i, token in enumerate(tokens):
         if tokenize.tok_name[token.exact_type] == "NL":
             tokens[i] = type(token)(tokenize.NEWLINE, token.string, token.start, token.end, token.line)
+    tokens = [token for token in tokens if tokenize.tok_name[token.exact_type] != "COMMENT"]
     return tokens
 
 
