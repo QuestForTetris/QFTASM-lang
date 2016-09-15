@@ -1,5 +1,5 @@
 from tree_builder.tree_builder import build_tree, GrammarTree
-from variables import VariableStore
+from variables import VariableStore, Variable, _id_gen
 
 
 class GlobalLocalStoreHelper:
@@ -56,17 +56,28 @@ class FileInterpreter:
         self.lists = {"sub": self.subs, "struct": self.structs}
         for stmt in stmts:
             self.lists[stmt["_block_name"]].append(self.file_types[stmt["_block_name"]](self.global_store, stmt))
-        print("STRUCTS:", self.structs)
+        assert "main" in [sub.name for sub in self.subs]
+
+    def __repr__(self):
+        #print("STRUCTS:", self.structs)
+        rtn = "\n\n".join(str(sub) for sub in self.subs)
+        return rtn
+
+    def compile(self):
+        rtn = []
         for sub in self.subs:
-            print(sub)
-            print()
+            rtn.extend(sub.compile())
+        for line in rtn:
+            print(line)
 
 
 class SubroutineInterpreter:
+    id_gen = _id_gen()
     def __init__(self, global_store: VariableStore, tree: GrammarTree):
         assert tree["_block_name"] == "sub"
         self.global_store = global_store
         self.local_store = VariableStore()
+        self.id = next(SubroutineInterpreter.id_gen)
         tree = tree["sub"]
         self.name = tree["name"]
         stmts = tree["stmts"]["stmts"]
@@ -82,7 +93,7 @@ class SubroutineInterpreter:
             self.stmts.append(StmtInterpreter(self.global_store, self.local_store, stmt))
 
     def __str__(self):
-        pre = "struct %s"%self.name
+        pre = "sub %s"%self.name
         if self.params:
             params = "("+", ".join(repr(param) for param in self.params)+")"
             pre += params
@@ -96,6 +107,14 @@ class SubroutineInterpreter:
         self.params.append(self.local_store.add_var(tree["type_var"]))
         if tree["_further_params"]:
             self.add_params(tree["typed_arg_list"])
+
+    def compile(self):
+        rtn = []
+        rtn.append(("sub", "start", self.id))
+        for stmt in self.stmts:
+            rtn.extend(stmt.stmt.compile())
+        rtn.append(("sub", "end", self.id))
+        return rtn
 
 
 class StmtInterpreter(GlobalLocalStoreHelper):
@@ -127,6 +146,11 @@ class AssignInterpreter(GlobalLocalStoreHelper):
     def __repr__(self):
         return str(self.var) + " = " + str(self.value)
 
+    def compile(self):
+        rtn, scratch = collect_value(self.value)
+        rtn.append(("assign", self.var, scratch))
+        return rtn
+
 
 class ModAssignInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
@@ -138,10 +162,18 @@ class ModAssignInterpreter(GlobalLocalStoreHelper):
     def __repr__(self):
         return " ".join([str(self.var), str(self.operator), str(self.value)])
 
+    def compile(self):
+        rtn, scratch = collect_value(self.value)
+        rtn.append(("operator", self.operator[:-1], self.var, scratch, self.var))
+        return rtn
+
 
 class ForInterpreter(GlobalLocalStoreHelper):
+    id_gen = _id_gen()
+
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
         super().__init__(global_store, local_store)
+        self.id = next(ForInterpreter.id_gen)
         self.setup = AssignInterpreter(global_store, local_store, tree.get_stmt("setup"))
         self.condition = self.parse_generic_value(tree.get_stmt("condition"))
         self.final = ModAssignInterpreter(global_store, local_store, tree.get_stmt("final"))
@@ -155,10 +187,25 @@ class ForInterpreter(GlobalLocalStoreHelper):
         rtn = "\t"+"\n\t".join(rtn)
         return pre+rtn
 
+    def compile(self):
+        rtn = []
+        rtn.extend(self.setup.compile())
+        extend, scratch = collect_value(self.condition)
+        rtn.extend(extend)
+        rtn.append(("for", "start", self.id, scratch))
+        for stmt in self.stmts:
+            rtn.extend(stmt.stmt.compile())
+        rtn.extend(self.final.compile())
+        rtn.append(("for", "end", self.id))
+        return rtn
+
 
 class IfInterpreter(GlobalLocalStoreHelper):
+    id_gen = _id_gen()
+
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
         super().__init__(global_store, local_store)
+        self.id = next(IfInterpreter.id_gen)
         self.condition = self.parse_generic_value(tree.get_stmt("condition"))
         self.stmts = []
         for stmt in tree["stmts"]["stmts"]:
@@ -170,10 +217,23 @@ class IfInterpreter(GlobalLocalStoreHelper):
         rtn = "\t"+"\n\t".join(rtn)
         return pre+rtn
 
+    def compile(self):
+        rtn = []
+        extend, scratch = collect_value(self.condition)
+        rtn.extend(extend)
+        rtn.append(("if", "start", self.id, scratch))
+        for stmt in self.stmts:
+            rtn.extend(stmt.stmt.compile())
+        rtn.append(("if", "end", self.id))
+        return rtn
+
 
 class WhileInterpreter(GlobalLocalStoreHelper):
+    id_gen = _id_gen()
+
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
         super().__init__(global_store, local_store)
+        self.id = next(WhileInterpreter.id_gen)
         self.condition = self.parse_generic_value(tree.get_stmt("condition"))
         self.stmts = []
         for stmt in tree["stmts"]["stmts"]:
@@ -185,6 +245,16 @@ class WhileInterpreter(GlobalLocalStoreHelper):
         rtn = "\t"+"\n\t".join(rtn)
         return pre+rtn
 
+    def compile(self):
+        rtn = []
+        extend, scratch = collect_value(self.condition)
+        rtn.extend(extend)
+        rtn.append(("while", "start", self.id, scratch))
+        for stmt in self.stmts:
+            rtn.extend(stmt.stmt.compile())
+        rtn.append(("while", "end", self.id))
+        return rtn
+
 
 class ReturnInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
@@ -195,12 +265,19 @@ class ReturnInterpreter(GlobalLocalStoreHelper):
     def __repr__(self):
         return "return %s"%self.value
 
+    def compile(self):
+        rtn, scratch = collect_value(self.value)
+        rtn.append(("return", scratch))
+        return rtn
+
 
 class LiteralInterpreter:
     def __init__(self, tree: GrammarTree):
         assert tree.name == "generic_literal"
         if tree["_block_name"] == "number":
             self.val = int(tree["value"])
+        else:
+            raise SyntaxError("Literal not a number")
 
     def __repr__(self):
         return repr(self.val)
@@ -213,9 +290,17 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
         self.value_1 = self.parse_var_literal(tree["var_literal"])
         self.operator = tree["operator"]["_block_name"]
         self.value_2 = self.parse_generic_value(tree["generic_value"])
+        self.result = self._local_store.add_scratchpad()
 
     def __repr__(self):
         return " ".join([str(self.value_1), self.operator, str(self.value_2)])
+
+    def compile(self):
+        rtn, scratch_1 = collect_value(self.value_1)
+        extend, scratch_2 = collect_value(self.value_2)
+        rtn.extend(extend)
+        rtn.append(("operator", self.operator, scratch_1, scratch_2, self.result))
+        return rtn
 
 
 class NotInterpreter(GlobalLocalStoreHelper):
@@ -223,9 +308,15 @@ class NotInterpreter(GlobalLocalStoreHelper):
         super().__init__(global_store, local_store)
         assert tree["_block_name"] == "not"
         self.value = self.parse_generic_value(tree["generic_value"])
+        self.result = self._local_store.add_scratchpad()
 
     def __repr__(self):
         return "not %s"%self.value
+
+    def compile(self):
+        rtn, scratch = collect_value(self.value)
+        rtn.append(("operator", "not", scratch, self.result))
+        return rtn
 
 
 class SubCallInterpreter(GlobalLocalStoreHelper):
@@ -235,6 +326,7 @@ class SubCallInterpreter(GlobalLocalStoreHelper):
         self.sub_name = tree["sub_name"]
         self.params = []
         self.add_params(tree["parameters"])
+        self.result = self._local_store.add_scratchpad()
 
     def __repr__(self):
         pre = str(self.sub_name)
@@ -243,12 +335,33 @@ class SubCallInterpreter(GlobalLocalStoreHelper):
             pre += params
         return pre
 
-
     def add_params(self, tree: GrammarTree):
         self.params.append(self.parse_generic_value(tree["generic_value"]))
         if tree["_further_params"]:
             self.add_params(tree["arg_list"])
 
+    def compile(self):
+        rtn = []
+        scratches = []
+        for param in self.params:
+            extend, new_scratch = collect_value(param)
+            rtn.extend(extend)
+            scratches.append(new_scratch)
+        rtn.append(("call_sub", self.sub_name, scratches, self.result))
+        return rtn
+
+
+def collect_value(value: GlobalLocalStoreHelper):
+    if isinstance(value, LiteralInterpreter):
+        return [], value.val
+    if isinstance(value, Variable):
+        return [], value
+    if isinstance(value, (ArithmeticInterpreter, NotInterpreter, SubCallInterpreter)):
+        return value.compile(), value.result
+    raise SyntaxError("Unable to collect value from %s" % value.__class__.__name__)
+
 
 if __name__ == "__main__":
     file_interpreter = FileInterpreter(build_tree("basic.txt"))
+    # print(file_interpreter)
+    file_interpreter.compile()
