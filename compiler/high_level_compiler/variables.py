@@ -1,11 +1,13 @@
 from tree_builder.tree_builder import GrammarTree
 
+
 def _id_gen():
     i = 0
     while 1:
         i += 1
         yield i
 id_gen = _id_gen()
+
 
 class VariableStore:
     def __init__(self):
@@ -28,9 +30,17 @@ class VariableStore:
         return rtn
 
     def add_scratchpad(self):
+        for scratchpad in self.scratchpads:
+            if scratchpad.being_used is False:
+                scratchpad.being_used = True
+                return scratchpad
         rtn = ScratchVariable()
         self.scratchpads.append(rtn)
         return rtn
+
+    def assert_scratch_free(self):
+        for scratchpad in self.scratchpads:
+            assert scratchpad.being_used is False
 
 
 class Variable:
@@ -62,3 +72,8 @@ class ScratchVariable(Variable):
         self.is_pointer = False
         self.is_global = False
         self.size = 1
+        self.being_used = True
+
+    def free(self):
+        assert self.being_used, "Attempted to free an already freed scratchpad"
+        self.being_used = False

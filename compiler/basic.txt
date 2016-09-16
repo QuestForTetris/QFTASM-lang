@@ -8,6 +8,6 @@ sub main
     int start = 2
 
     while 1 do
-        start += 1
+        start = start + 1
         if is_prime(start)
             int cur_prime = start
