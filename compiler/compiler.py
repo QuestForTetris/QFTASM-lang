@@ -5,4 +5,5 @@ from low_level_compiler.low_level_compiler import FileInterpreter as LowLevelFil
 if __name__ == "__main__":
     high_level_file_interpreter = HighLevelFileInterpreter(build_tree("basic.txt"))
     # print(file_interpreter)
-    low_level_file_interpreter = LowLevelFileInterpreter(high_level_file_interpreter.compile())
+    low_level_file_interpreter = LowLevelFileInterpreter(high_level_file_interpreter.compile(),
+                                                         high_level_file_interpreter.global_store)
