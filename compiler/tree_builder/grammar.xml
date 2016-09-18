@@ -236,9 +236,6 @@
         <block name="%">
             <token exact_type="PERCENT"/>
         </block>
-        <block name="~">
-            <token exact_type="TILDE"/>
-        </block>
         <block name="^">
             <token exact_type="CIRCUMFLEX"/>
         </block>
@@ -264,6 +261,10 @@
     <define name="generic_value">
         <block name="not">
             <token exact_type="NAME" string="not"/>
+            <stmt name="generic_value" var="value"/>
+        </block>
+        <block name="complement">
+            <token exact_type="TILDE"/>
             <stmt name="generic_value" var="value"/>
         </block>
         <block name="arith">

@@ -21,7 +21,15 @@ class VariableStore:
             return item in self._vars
 
     def __getitem__(self, item):
-        return self._vars[VariableStore.get_name(item)]
+        try:
+            return self._vars[VariableStore.get_name(item)]
+        except TypeError:
+            try:
+                return self._vars[item]
+            except KeyError:
+                for var in self._scratchpads:
+                    if var.name == item:
+                        return var
 
     def __repr__(self):
         try:

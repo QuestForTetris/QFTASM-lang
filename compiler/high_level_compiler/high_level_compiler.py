@@ -34,6 +34,8 @@ class GlobalLocalStoreHelper:
             return SubCallInterpreter(self._global_store, self._local_store, tree["sub_call"])
         elif tree["_block_name"] == "not":
             return NotInterpreter(self._global_store, self._local_store, tree)
+        elif tree["_block_name"] == "complement":
+            return ComplementInterpreter(self._global_store, self._local_store, tree)
         assert False, "Failed to assign generic_value %s"%tree["_block_name"]
 
     def parse_var_literal(self, tree: GrammarTree):
@@ -55,7 +57,7 @@ class GlobalLocalStoreHelper:
             return [], value.val
         if isinstance(value, Variable):
             return [], value
-        if isinstance(value, (ArithmeticInterpreter, NotInterpreter, SubCallInterpreter)):
+        if isinstance(value, (ArithmeticInterpreter, NotInterpreter, SubCallInterpreter, ComplementInterpreter)):
             return value.compile(), value.result
         raise SyntaxError("Unable to collect value from %s" % value.__class__.__name__)
 
@@ -94,8 +96,16 @@ class FileInterpreter:
                 new.name = sub.name + "_" + new.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
+        self.global_store.add_subroutine(CustomVariable("rtn_address",
+                                                        is_pointer=True,
+                                                        is_global=True))
+        self.global_store.add_subroutine(CustomVariable("result",
+                                                        is_global=True))
         self.global_store.add_subroutine(CustomVariable(name="stack",
                                                         is_pointer=True,
+                                                        is_global=True))
+        self.global_store.add_subroutine(CustomVariable(name="operation_tmp_1",
+                                                        is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
         return rtn
@@ -113,9 +123,11 @@ class SubroutineInterpreter:
         if tree["_parameters"]:
             params = tree["typed_parameters"]
             self.add_params(params)
-        self.rtn_type = None
+        self.rtn_type = "null"
         if tree["_rtn_type"]:
             self.rtn_type = tree["rtn_type"]
+        self.result = CustomVariable("result", type=self.rtn_type)
+        self.local_store.add_named(self.result)
         self.stmts = []
         for stmt in stmts:
             self.stmts.append(StmtInterpreter(self.global_store, self.local_store, stmt))
@@ -138,10 +150,10 @@ class SubroutineInterpreter:
 
     def compile(self):
         rtn = []
-        rtn.append(("sub", "start", self.name))
+        rtn.append(("sub", "start", self.name, None))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
-        rtn.append(("sub", "end", self.name))
+        rtn.append(("sub", "end", self.name, self.result))
         return rtn
 
 
@@ -357,6 +369,23 @@ class NotInterpreter(GlobalLocalStoreHelper):
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
         rtn.append(("operator", "not", scratch, None, self.result))
+        self.free_scratch(scratch)
+        return rtn
+
+
+class ComplementInterpreter(GlobalLocalStoreHelper):
+    def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
+        super().__init__(global_store, local_store)
+        assert tree["_block_name"] == "complement"
+        self.value = self.parse_generic_value(tree["generic_value"])
+        self.result = self._global_store.add_scratchpad()
+
+    def __repr__(self):
+        return "~%s"%self.value
+
+    def compile(self):
+        rtn, scratch = self.collect_value(self.value)
+        rtn.append(("operator", "~", scratch, None, self.result))
         self.free_scratch(scratch)
         return rtn
 
