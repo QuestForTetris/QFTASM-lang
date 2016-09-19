@@ -5,7 +5,6 @@ class FileInterpreter:
         self.opcodes = {
             "sub": self.sub_interpreter,
             "assign": self.assign_interpreter,
-            "for": self.for_interpreter,
             "if": self.if_interpreter,
             "while": self.while_interpreter,
             "operator": self.operator_interpreter,
@@ -22,18 +21,38 @@ class FileInterpreter:
 
     def sub_interpreter(self, status, sub_id, result_var):
         self.current_sub = sub_id
+        self.result_var = result_var
         if status == "start":
             return ["#Start "+sub_id]
         else:
-            return self.return_interpreter(result_var)
+            rtn = self.return_interpreter(self.result_var)
+            rtn.append("#End "+sub_id)
+            return rtn
 
     def assign_interpreter(self, variable, value):
         return ["MLZ -1 %s %s" % (self.parse_variable(value),
                                   self.parse_result(variable))]
 
-    def for_interpreter(self, status, for_id, condition): return []
-    def if_interpreter(self, status, if_id, condition): return []
-    def while_interpreter(self, status, while_id, condition): return []
+    def if_interpreter(self, status, if_id, condition):
+        if status == "end":
+            return ["#End if_%s" % if_id]
+        condition = self.parse_variable(condition)
+        rtn = ["#Start if_%s" % if_id,
+               "MNZ %s %%s 0; End if_%s" % (condition, if_id),
+               "MLZ 0 0 0"]
+        return rtn
+
+    def while_interpreter(self, status, while_id, condition):
+        if status == "end":
+            condition = self.parse_variable(condition)
+            rtn = ["#End while_%s" % while_id,
+                   "MNZ %s %%s 0; Start while_%s" % (condition, while_id),
+                   "MLZ 0 0 0"]
+            return rtn
+        rtn = ["MLZ -1 %%s 0; End while_%s" % while_id,
+               "MLZ 0 0 0",
+               "#Start while_%s" % while_id]
+        return rtn
 
     def operator_interpreter(self, operator, val_1, val_2, result):
         result = self.parse_result(result)
@@ -77,8 +96,8 @@ class FileInterpreter:
         else:
             assert False, operator + " isn't defined"
 
-    def return_interpreter(self, value): return []
-    def call_sub_interpreter(self, sub_name, args, result): return []
+    def return_interpreter(self, value): return ["#RETURN %s"%value]
+    def call_sub_interpreter(self, sub_name, args, result): return ["#CALL SUB %s"%sub_name]
 
     def parse_variable(self, variable) -> str:
         if not isinstance(variable, Variable):
@@ -138,12 +157,13 @@ class FileInterpreter:
         pointer_result = self.inc_pointer(result)
         tmp = self.parse_variable(self.global_store["operation_tmp_1"])
         return ["MLZ -1 %s %s"%(val_1, result),
-                "MLZ -1 %s 0; +4" ,
+                "MLZ -1 %s 0; + 4" ,
                 "ADD %s 1 %s" % (pointer_result, tmp),
                 "SUB %s %s %s" % (pointer_result, val_2, result),
                 "ADD %s 1 %s" % (pointer_result, tmp),
                 "SUB %s %s %s" % (val_2, pointer_result, tmp),
-                "MLZ %s %%s 0; -3" % (tmp)]
+                "MLZ %s %%s 0; - 3" % tmp,
+                "MLZ 0 0 0"]
 
     def inc_pointer(self, val):
         if val[0] in "ABC":

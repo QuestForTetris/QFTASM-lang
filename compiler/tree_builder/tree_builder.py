@@ -28,7 +28,7 @@ class DefineParser:
         self.blocks = [BlockParser(block) for block in self._root.findall("block")]
 
     def accepts(self, tokens):
-        # print("StartDef", self.name)
+        #print("StartDef", self.name)
         # if self.name == "if":
         #    print("Tokens", [tokenize.tok_name[token.exact_type]for token in tokens])
         #    print("Tokens", [token.string for token in tokens])
@@ -37,9 +37,9 @@ class DefineParser:
             # print("B", block, "A", accepts)
             if accepts:
                 grammar_tree = GrammarTree(self.name, accepts)
-                # print("EndDef", self.name)
+                #print("EndDef", self.name)
                 return new_tokens, grammar_tree
-        # print("FailDef", self.name)
+        #print("FailDef", self.name)
         error_msg.fail_def(new_tokens)
         return tokens, False
 

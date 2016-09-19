@@ -4,6 +4,13 @@ except ImportError:
     from variables import VariableStore, Variable, ScratchVariable, CustomVariable, _id_gen
 from tree_builder.tree_builder import build_tree, GrammarTree
 import copy
+import itertools
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 class GlobalLocalStoreHelper:
@@ -108,8 +115,25 @@ class FileInterpreter:
                                                         is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
+        rtn = self.optimise(rtn)
         return rtn
 
+    def optimise(self, microcode):
+        rtn = []
+        optimised = False
+        optimised_not = False
+        for inst_1, inst_2 in pairwise(microcode):
+            if inst_1 == inst_2 and inst_1[:2] == ("operator", "not") and not optimised_not:
+                optimised_not = True
+                optimised = True
+            elif optimised_not:
+                optimised_not = False
+            else:
+                rtn.append(inst_1)
+        rtn.append(inst_2)
+        if optimised:
+            return self.optimise(rtn)
+        return rtn
 
 class SubroutineInterpreter:
     def __init__(self, global_store: VariableStore, tree: GrammarTree):
@@ -150,7 +174,7 @@ class SubroutineInterpreter:
 
     def compile(self):
         rtn = []
-        rtn.append(("sub", "start", self.name, None))
+        rtn.append(("sub", "start", self.name, self.result))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
         rtn.append(("sub", "end", self.name, self.result))
@@ -215,11 +239,10 @@ class ModAssignInterpreter(GlobalLocalStoreHelper):
 
 
 class ForInterpreter(GlobalLocalStoreHelper):
-    id_gen = _id_gen()
 
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
         super().__init__(global_store, local_store)
-        self.id = next(ForInterpreter.id_gen)
+        self.id = next(WhileInterpreter.id_gen)
         self.setup = AssignInterpreter(global_store, local_store, tree.get_stmt("setup"))
         self.condition = self.parse_generic_value(tree.get_stmt("condition"))
         self.final = ModAssignInterpreter(global_store, local_store, tree.get_stmt("final"))
@@ -237,13 +260,12 @@ class ForInterpreter(GlobalLocalStoreHelper):
         rtn = []
         rtn.extend(self.setup.compile())
         extend, scratch = self.collect_value(self.condition)
-        rtn.extend(extend)
-        rtn.append(("for", "start", self.id, scratch))
+        rtn.append(("while", "start", self.id, "for"))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
         rtn.extend(self.final.compile())
         rtn.extend(extend)
-        rtn.append(("for", "end", self.id, None))
+        rtn.append(("while", "end", self.id, scratch))
         self.free_scratch(scratch)
         return rtn
 
@@ -269,6 +291,7 @@ class IfInterpreter(GlobalLocalStoreHelper):
         rtn = []
         extend, scratch = self.collect_value(self.condition)
         rtn.extend(extend)
+        rtn.append(("operator", "not", scratch, None, scratch))
         rtn.append(("if", "start", self.id, scratch))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
@@ -297,11 +320,11 @@ class WhileInterpreter(GlobalLocalStoreHelper):
     def compile(self):
         rtn = []
         extend, scratch = self.collect_value(self.condition)
-        rtn.extend(extend)
-        rtn.append(("while", "start", self.id, scratch))
+        rtn.append(("while", "start", self.id, "while"))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
-        rtn.append(("while", "end", self.id, None))
+        rtn.extend(extend)
+        rtn.append(("while", "end", self.id, scratch))
         self.free_scratch(scratch)
         return rtn
 
@@ -341,7 +364,6 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
         self.value_1 = self.parse_var_literal(tree["var_literal"])
         self.operator = tree["operator"]["_block_name"]
         self.value_2 = self.parse_generic_value(tree["generic_value"])
-        self.result = self._global_store.add_scratchpad()
 
     def __repr__(self):
         return " ".join([str(self.value_1), self.operator, str(self.value_2)])
@@ -349,10 +371,18 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
     def compile(self):
         rtn, scratch_1 = self.collect_value(self.value_1)
         extend, scratch_2 = self.collect_value(self.value_2)
+        if isinstance(scratch_1, ScratchVariable):
+            self.result = scratch_1
+            self.free_scratch(scratch_2)
+        elif isinstance(scratch_2, ScratchVariable):
+            self.result = scratch_2
+            self.free_scratch(scratch_1)
+        else:
+            self.result = self._global_store.add_scratchpad()
+            self.free_scratch(scratch_1)
+            self.free_scratch(scratch_2)
         rtn.extend(extend)
         rtn.append(("operator", self.operator, scratch_1, scratch_2, self.result))
-        self.free_scratch(scratch_1)
-        self.free_scratch(scratch_2)
         return rtn
 
 
@@ -361,15 +391,18 @@ class NotInterpreter(GlobalLocalStoreHelper):
         super().__init__(global_store, local_store)
         assert tree["_block_name"] == "not"
         self.value = self.parse_generic_value(tree["generic_value"])
-        self.result = self._global_store.add_scratchpad()
 
     def __repr__(self):
         return "not %s"%self.value
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
+        if isinstance(scratch, ScratchVariable):
+            self.result = scratch
+        else:
+            self.result = self._global_store.add_scratchpad()
+            self.free_scratch(scratch)
         rtn.append(("operator", "not", scratch, None, self.result))
-        self.free_scratch(scratch)
         return rtn
 
 
@@ -378,15 +411,18 @@ class ComplementInterpreter(GlobalLocalStoreHelper):
         super().__init__(global_store, local_store)
         assert tree["_block_name"] == "complement"
         self.value = self.parse_generic_value(tree["generic_value"])
-        self.result = self._global_store.add_scratchpad()
 
     def __repr__(self):
         return "~%s"%self.value
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
+        if isinstance(scratch, ScratchVariable):
+            self.result = scratch
+        else:
+            self.result = self._global_store.add_scratchpad()
+            self.free_scratch(scratch)
         rtn.append(("operator", "~", scratch, None, self.result))
-        self.free_scratch(scratch)
         return rtn
 
 
