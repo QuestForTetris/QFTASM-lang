@@ -76,7 +76,7 @@ class VariableStore:
             self.offsets.append(self._vars[var])
         for var in self._scratchpads:
             self.offsets.append(var)
-        cur_offset = 0
+        cur_offset = 1
         for variable in self.offsets:
             variable.set_offset(cur_offset)
             cur_offset += variable.size

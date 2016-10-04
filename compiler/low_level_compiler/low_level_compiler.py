@@ -17,7 +17,26 @@ class FileInterpreter:
         for instruction in instruction_list:
             assert instruction[0] in self.opcodes
             compiled.extend(self.opcodes[instruction[0]](*instruction[1:]))
+        compiled = self.add_jumps(compiled)
         print("\n".join(compiled))
+
+    def add_jumps(self, compiled):
+        for i, instruction in enumerate(compiled):
+            instruction, semi, jump = instruction.partition(";")
+            if semi:
+                jump = jump.strip()
+                if jump[0] not in "+-":
+                    jump_offset = compiled.index("#"+jump)
+                    jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
+                    jump_offset += jump.startswith("Start")
+                    compiled[i] = instruction % jump_offset
+        compiled = [inst for inst in compiled if not inst.startswith("#")]
+        for i, instruction in enumerate(compiled):
+            instruction, semi, jump = instruction.partition(";")
+            if semi:
+                compiled[i] = instruction % eval(str(i)+jump)
+            compiled[i] = str(i+1)+". "+compiled[i]
+        return compiled
 
     def sub_interpreter(self, status, sub_id, result_var):
         self.current_sub = sub_id
@@ -96,7 +115,14 @@ class FileInterpreter:
         else:
             assert False, operator + " isn't defined"
 
-    def return_interpreter(self, value): return ["#RETURN %s"%value]
+    def return_interpreter(self, value):
+        rtn = []
+        if value is not self.result_var:
+            rtn = ["MLZ -1 %s %s" % (self.parse_variable(value),
+                                     self.parse_result(self.result_var))]
+        rtn.append("#RETURN %s"%value)
+        return rtn
+
     def call_sub_interpreter(self, sub_name, args, result): return ["#CALL SUB %s"%sub_name]
 
     def parse_variable(self, variable) -> str:
@@ -155,14 +181,15 @@ class FileInterpreter:
             if is_pow_2:
                 return self.parse_and(val_1, str(num-1), result)
         pointer_result = self.inc_pointer(result)
-        tmp = self.parse_variable(self.global_store["operation_tmp_1"])
-        return ["MLZ -1 %s %s"%(val_1, result),
-                "MLZ -1 %s 0; + 4" ,
+        tmp = self.parse_result(self.global_store["operation_tmp_1"])
+        pointer_tmp = self.inc_pointer(tmp)
+        return ["MLZ -1 %s %s" % (val_1, result),
+                "MLZ -1 %s 0; + 2",
                 "ADD %s 1 %s" % (pointer_result, tmp),
                 "SUB %s %s %s" % (pointer_result, val_2, result),
-                "ADD %s 1 %s" % (pointer_result, tmp),
                 "SUB %s %s %s" % (val_2, pointer_result, tmp),
-                "MLZ %s %%s 0; - 3" % tmp,
+                "SUB %s 1 %s" % (pointer_tmp, tmp),
+                "MLZ %s %%s 0; - 4" % (pointer_tmp),
                 "MLZ 0 0 0"]
 
     def inc_pointer(self, val):

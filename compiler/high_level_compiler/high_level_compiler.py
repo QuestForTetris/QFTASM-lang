@@ -257,9 +257,9 @@ class ForInterpreter(GlobalLocalStoreHelper):
         return pre+rtn
 
     def compile(self):
-        rtn = []
-        rtn.extend(self.setup.compile())
+        rtn = self.setup.compile()
         extend, scratch = self.collect_value(self.condition)
+        rtn.extend(extend)
         rtn.append(("while", "start", self.id, "for"))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
@@ -320,6 +320,7 @@ class WhileInterpreter(GlobalLocalStoreHelper):
     def compile(self):
         rtn = []
         extend, scratch = self.collect_value(self.condition)
+        rtn.extend(extend)
         rtn.append(("while", "start", self.id, "while"))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
@@ -379,6 +380,7 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch_1)
         else:
             self.result = self._global_store.add_scratchpad()
+            rtn.append(("assign", self.result, 0))
             self.free_scratch(scratch_1)
             self.free_scratch(scratch_2)
         rtn.extend(extend)
