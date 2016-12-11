@@ -39,10 +39,8 @@ class GlobalLocalStoreHelper:
             return ArithmeticInterpreter(self._global_store, self._local_store, tree)
         elif tree["_block_name"] == "sub_call":
             return SubCallInterpreter(self._global_store, self._local_store, tree["sub_call"])
-        elif tree["_block_name"] == "not":
-            return NotInterpreter(self._global_store, self._local_store, tree)
-        elif tree["_block_name"] == "complement":
-            return ComplementInterpreter(self._global_store, self._local_store, tree)
+        elif tree["_block_name"] == "single":
+            return SingleInterpreter(self._global_store, self._local_store, tree)
         assert False, "Failed to assign generic_value %s"%tree["_block_name"]
 
     def parse_var_literal(self, tree: GrammarTree):
@@ -64,7 +62,9 @@ class GlobalLocalStoreHelper:
             return [], value.val
         if isinstance(value, Variable):
             return [], value
-        if isinstance(value, (ArithmeticInterpreter, NotInterpreter, SubCallInterpreter, ComplementInterpreter)):
+        if isinstance(value, (ArithmeticInterpreter, SingleInterpreter)):
+            return value.compile(), value.result
+        if isinstance(value, SubCallInterpreter):
             return value.compile(), value.result
         raise SyntaxError("Unable to collect value from %s" % value.__class__.__name__)
 
@@ -73,13 +73,16 @@ class FileInterpreter:
     def __init__(self, tree: GrammarTree):
         self.file_types = {
             "sub": SubroutineInterpreter,
-            "struct": None
+            "inline": InlineInterpreter,
+            "struct": None,
+            "newline": DummyInterpreter
         }
         stmts = tree["stmts"]
         self.global_store = VariableStore()
         self.subs = []
         self.structs = []
-        self.lists = {"sub": self.subs, "struct": self.structs}
+        self.inlines = []
+        self.lists = {"sub": self.subs, "struct": self.structs, "inline": self.inlines, "newline": []}
         for stmt in stmts:
             self.lists[stmt["_block_name"]].append(self.file_types[stmt["_block_name"]](self.global_store, stmt))
         assert "main" in [sub.name for sub in self.subs]
@@ -91,34 +94,82 @@ class FileInterpreter:
 
     def compile(self):
         rtn = []
-        for sub in self.subs:
+        for sub in sorted(self.subs, key=lambda sub: sub.name == "main", reverse=True):
             rtn.extend(sub.compile())
         for sub in self.subs:
             sub.local_store.finalise()
-            self.global_store.add_subroutine(CustomVariable(name=sub.name,
-                                                            is_pointer=True,
-                                                            is_global=True))
             for var in sub.local_store.offsets:
                 new = copy.deepcopy(var)
                 new.name = sub.name + "_" + new.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
-        self.global_store.add_subroutine(CustomVariable("rtn_address",
-                                                        is_pointer=True,
-                                                        is_global=True))
-        self.global_store.add_subroutine(CustomVariable("result",
-                                                        is_global=True))
         self.global_store.add_subroutine(CustomVariable(name="stack",
                                                         is_pointer=True,
                                                         is_global=True))
         self.global_store.add_subroutine(CustomVariable(name="operation_tmp_1",
                                                         is_pointer=False,
                                                         is_global=True))
+        self.global_store.add_subroutine(CustomVariable(name="operation_tmp_2",
+                                                        is_pointer=False,
+                                                        is_global=True))
+        self.global_store.add_subroutine(CustomVariable(name="operation_tmp_3",
+                                                        is_pointer=False,
+                                                        is_global=True))
         self.global_store.finalise()
-        rtn = self.optimise(rtn)
+        rtn = self.optimise_operators(rtn)
+        rtn = self.optimise_nots(rtn)
         return rtn
 
-    def optimise(self, microcode):
+    def optimise_operators(self, instructions):
+        rtn = []
+        for inst in instructions:
+            if inst[0] == "operator":
+                inst, operator, *vars = inst
+                for inline in self.inlines:
+                    if inline.operator == operator:
+                        skip = False
+                        for var, cmp_var in zip(vars, inline.args+[inline.rtn_type]):
+                            try:
+                                var_type = var.type
+                            except AttributeError:
+                                var_type = type(var).__name__
+                            try:
+                                cmp_type = cmp_var.type
+                            except AttributeError:
+                                cmp_type = cmp_var
+                            if var_type != cmp_type:
+                                skip = True
+                        if skip:
+                            continue
+                        #Now replace the variables and replace it
+                        *compiled, (rtn_stmt, result) = inline.compile()
+                        assert rtn_stmt == "return", "operator's must have a return as last statement"
+                        inline_vars = inline.args+[result]
+                        zipped_args = dict(zip(map(id, inline_vars), vars))
+                        modified = False
+                        modded_operation = []
+                        for instruction in compiled:
+                            modded_instruction = []
+                            if instruction[0] == "call_sub":
+                                instruction = list(instruction)
+                                instruction[2] = [zipped_args.get(id(operand), operand) for operand in instruction[2]]
+                            for operand in instruction:
+                                if operand in inline_vars:
+                                    modded_instruction.append(zipped_args[id(operand)])
+                                    modified = True
+                                else:
+                                    modded_instruction.append(operand)
+                            modded_operation.append(tuple(modded_instruction))
+                        if modified:
+                            rtn.extend(self.optimise_operators(modded_operation))
+                        else:
+                            rtn.extend(modded_operation)
+                        break
+            else:
+                rtn.append(inst)
+        return rtn
+
+    def optimise_nots(self, microcode):
         rtn = []
         optimised = False
         optimised_not = False
@@ -132,8 +183,9 @@ class FileInterpreter:
                 rtn.append(inst_1)
         rtn.append(inst_2)
         if optimised:
-            return self.optimise(rtn)
+            return self.optimise_nots(rtn)
         return rtn
+
 
 class SubroutineInterpreter:
     def __init__(self, global_store: VariableStore, tree: GrammarTree):
@@ -181,6 +233,35 @@ class SubroutineInterpreter:
         return rtn
 
 
+class InlineInterpreter:
+    def __init__(self, global_store: VariableStore, tree: GrammarTree):
+        assert tree["_block_name"] == "inline"
+        self.global_store = global_store
+        self.local_store = VariableStore()
+        tree = tree["inline"]
+        if tree["_block_name"] == "two_op":
+            self.operator = tree["operator"]["_block_name"]
+            args = [tree["type_var"], tree["type_var_2"]]
+        else:
+            self.operator = tree["single_op"]["_block_name"]
+            args = [tree["type_var"]]
+        self.args = [self.local_store.add_var(arg) for arg in args]
+        stmts = tree["stmts"]["stmts"]
+        self.rtn_type = tree["rtn_type"]
+        self.stmts = []
+        for stmt in stmts:
+            self.stmts.append(StmtInterpreter(self.global_store, self.local_store, stmt))
+
+    def __str__(self):
+        return "operator({}, {}, {})".format(self.operator, self.args, self.rtn_type)
+
+    def compile(self):
+        rtn = []
+        for stmt in self.stmts:
+            rtn.extend(stmt.stmt.compile())
+        return rtn
+
+
 class StmtInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
         super().__init__(global_store, local_store)
@@ -190,7 +271,8 @@ class StmtInterpreter(GlobalLocalStoreHelper):
             "while_do": WhileInterpreter,
             "for": ForInterpreter,
             "if": IfInterpreter,
-            "return": ReturnInterpreter
+            "return": ReturnInterpreter,
+            "sub_call": SubCallInterpreter
         }
         assert tree["_block_name"] == "stmt"
         tree = tree["simple_stmt"]
@@ -380,7 +462,6 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch_1)
         else:
             self.result = self._global_store.add_scratchpad()
-            rtn.append(("assign", self.result, 0))
             self.free_scratch(scratch_1)
             self.free_scratch(scratch_2)
         rtn.extend(extend)
@@ -388,14 +469,14 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
         return rtn
 
 
-class NotInterpreter(GlobalLocalStoreHelper):
+class SingleInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
         super().__init__(global_store, local_store)
-        assert tree["_block_name"] == "not"
+        self.operator = tree["single_op"]["_block_name"]
         self.value = self.parse_generic_value(tree["generic_value"])
 
     def __repr__(self):
-        return "not %s"%self.value
+        return "%s %s" % (self.operator, self.value)
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
@@ -404,27 +485,7 @@ class NotInterpreter(GlobalLocalStoreHelper):
         else:
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
-        rtn.append(("operator", "not", scratch, None, self.result))
-        return rtn
-
-
-class ComplementInterpreter(GlobalLocalStoreHelper):
-    def __init__(self, global_store: VariableStore, local_store: VariableStore, tree: GrammarTree):
-        super().__init__(global_store, local_store)
-        assert tree["_block_name"] == "complement"
-        self.value = self.parse_generic_value(tree["generic_value"])
-
-    def __repr__(self):
-        return "~%s"%self.value
-
-    def compile(self):
-        rtn, scratch = self.collect_value(self.value)
-        if isinstance(scratch, ScratchVariable):
-            self.result = scratch
-        else:
-            self.result = self._global_store.add_scratchpad()
-            self.free_scratch(scratch)
-        rtn.append(("operator", "~", scratch, None, self.result))
+        rtn.append(("operator", self.operator, scratch, None, self.result))
         return rtn
 
 
@@ -435,7 +496,6 @@ class SubCallInterpreter(GlobalLocalStoreHelper):
         self.sub_name = tree["sub_name"]
         self.params = []
         self.add_params(tree["parameters"])
-        self.result = self._global_store.add_scratchpad()
 
     def __repr__(self):
         pre = str(self.sub_name)
@@ -456,10 +516,16 @@ class SubCallInterpreter(GlobalLocalStoreHelper):
             extend, new_scratch = self.collect_value(param)
             rtn.extend(extend)
             scratches.append(new_scratch)
+        self.result = self._global_store.add_scratchpad()
         rtn.append(("call_sub", self.sub_name, scratches, self.result))
-        for scratch in scratches: self.free_scratch(scratch)
+        for scratch in scratches:
+            self.free_scratch(scratch)
         return rtn
 
+
+class DummyInterpreter:
+    def __init__(self, global_store: VariableStore, tree: GrammarTree):
+        pass
 
 if __name__ == "__main__":
     file_interpreter = FileInterpreter(build_tree("basic.txt"))

@@ -11,6 +11,9 @@
                 <block name="sub">
                     <stmt name="sub"/>
                 </block>
+                <block name="inline">
+                    <stmt name="inline"/>
+                </block>
             </repeat>
             <token exact_type="ENDMARKER"/>
         </block>
@@ -43,6 +46,35 @@
                 <token string="->"/>
                 <token exact_type="NAME" var="rtn_type"/>
             </optional>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <stmt name="stmts"/>
+            <token exact_type="DEDENT"/>
+        </block>
+    </define>
+    <define name="inline">
+        <block name="two_op">
+            <token exact_type="NAME" string="operator"/>
+            <token exact_type="LPAR"/>
+            <stmt name="type_var"/>
+            <stmt name="operator"/>
+            <stmt name="type_var"/>
+            <token exact_type="RPAR"/>
+            <token string="->"/>
+            <token exact_type="NAME" var="rtn_type"/>
+            <token exact_type="NEWLINE"/>
+            <token exact_type="INDENT"/>
+            <stmt name="stmts"/>
+            <token exact_type="DEDENT"/>
+        </block>
+        <block name="one_op">
+            <token exact_type="NAME" string="operator"/>
+            <stmt name="single_op"/>
+            <token exact_type="LPAR"/>
+            <stmt name="type_var"/>
+            <token exact_type="RPAR"/>
+            <token string="->"/>
+            <token exact_type="NAME" var="rtn_type"/>
             <token exact_type="NEWLINE"/>
             <token exact_type="INDENT"/>
             <stmt name="stmts"/>
@@ -258,14 +290,21 @@
             <token exact_type="GREATER"/>
         </block>
     </define>
-    <define name="generic_value">
+    <define name="single_op">
+        <block name="~">
+            <token exact_type="TILDE"/>
+        </block>
+        <block name="-">
+            <token exact_type="MINUS"/>
+        </block>
         <block name="not">
             <token exact_type="NAME" string="not"/>
-            <stmt name="generic_value" var="value"/>
         </block>
-        <block name="complement">
-            <token exact_type="TILDE"/>
-            <stmt name="generic_value" var="value"/>
+    </define>
+    <define name="generic_value">
+        <block name="single">
+            <stmt name="single_op"/>
+            <stmt name="generic_value"/>
         </block>
         <block name="arith">
             <stmt name="var_literal"/>

@@ -1,0 +1,43 @@
+operator (int a + int b) -> int
+    return __ADD__(a, b)
+
+operator (int a - int b) -> int
+    return __SUB__(a, b)
+
+operator -(int a) -> int
+    return 0-a
+
+operator (int a >= int b) -> int
+    int rtn = 1
+    rtn = __MLZ__(a-b, 0)
+    return rtn
+
+operator (int a <= int b) -> int
+    int rtn = 1
+    rtn = __MLZ__(b-a, 0)
+    return rtn
+
+operator (int a > int b) -> int
+    int rtn = 0
+    rtn = __MLZ__(b-a, 1)
+    return rtn
+
+operator (int a < int b) -> int
+    int rtn = 0
+    rtn = __MLZ__(a-b, 1)
+    return rtn
+
+operator ~(int a) -> int
+    return __ANT__(-1, a)
+
+operator (int a == int b) -> bool
+    return not __XOR__(a, b)
+
+operator (int a != int b) -> int
+    return __XOR__(a, b)
+
+operator (int a % int b) -> int
+    int rtn = a
+    while (rtn >= b) do
+        rtn -= b
+    return rtn

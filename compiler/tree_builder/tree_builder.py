@@ -148,6 +148,7 @@ class StmtParser:
             return new_tokens, (self.name, accepts)
         return tokens, False
 
+
 class OptionalParser(BlockParser):
     def __init__(self, root):
         try:
@@ -190,6 +191,11 @@ class GrammarTree:
         for var in vars:
             if var is True: continue
             key, value = var
+            orig_key = key
+            i = 2
+            while key in self._dict:
+                key = orig_key + "_" + str(i)
+                i += 1
             self._dict[key] = value
 
     def __setitem__(self, key, value):
@@ -218,13 +224,19 @@ def tokenise(inp):
     tokens = tokenize.tokenize(inp.readline)
     # Get rid of the encoding token
     next(tokens)
-    tokens = list(tokens)
+    rtn = []
     # Replace NL tokens with NEWLINE tokens
+    purge_comments = False
     for i, token in enumerate(tokens):
         if tokenize.tok_name[token.exact_type] == "NL":
-            tokens[i] = type(token)(tokenize.NEWLINE, token.string, token.start, token.end, token.line)
-    tokens = [token for token in tokens if tokenize.tok_name[token.exact_type] != "COMMENT"]
-    return tokens
+            rtn.append(type(token)(tokenize.NEWLINE, token.string, token.start, token.end, token.line))
+        elif not purge_comments and tokenize.tok_name[token.exact_type] == "COMMENT" and token.string.startswith("#include"):
+            with open(token.string[9:] + ".txt", "rb") as include_file:
+                rtn.extend(tokenise(include_file)[:-1])
+        else:
+            purge_comments = True
+            rtn.append(token)
+    return rtn
 
 
 def build_tree(filename):

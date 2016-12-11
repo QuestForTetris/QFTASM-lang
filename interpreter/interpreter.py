@@ -70,10 +70,10 @@ class Interpreter:
         len_tokens = len(self.tokens)
         while 1:
             opcode, operands = self.tokens[self.ram._contents[0]]
-            opcode(*operands)
             self.ram._contents[0] += 1
-            print(self.ram)
-            if self.ram._contents[0] >= len_tokens:
+            opcode(*operands)
+            #print(self.ram)
+            if self.ram._contents[0] > len_tokens:
                 break
         print("Done!")
 
@@ -96,10 +96,17 @@ class RAM():
         return "\n".join(rtn)
 
     def __getitem__(self, item):
-        return self._contents.get(item, 0)
+        try:
+            return self._contents[item]
+        except KeyError:
+            return 0
 
     def __setitem__(self, key, value):
         self._contents[key] = self.fix_value(value)
+        if key == 5:
+            print("Set 5 to", self._contents[key])
+            if self._contents[key] == 211:
+                exit()
         if value == 0:
             del self._contents[key]
 
@@ -122,16 +129,17 @@ class RamLocation():
         self.ram = ram
         self.layers = "ABC".find(address[0]) + 1
         self.address = self.ram.fix_value(int(address[self.layers > 0:]))
+        self.range_layers = list(range(self.layers))
 
     def __call__(self):
         if self.layers == 0:
             return self.address
         value = self.address
-        for i in range(self.layers):
+        for i in self.range_layers:
             value = self.ram[value]
         return value
 
 if __name__ == "__main__":
-    with open("primes.qftasm") as assembly_file:
+    with open("output.qftasm") as assembly_file:
         interpreter = Interpreter(assembly_file.read())
         interpreter.run()
