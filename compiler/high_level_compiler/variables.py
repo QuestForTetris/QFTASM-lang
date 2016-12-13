@@ -44,6 +44,17 @@ class VariableStore:
     def get_name(var: GrammarTree):
         return var[var["_block_name"]]["name"]
 
+    def filter_subroutine(self, sub_name):
+        rtn = []
+        for variable in self._vars.values():
+            if variable.sub == sub_name:
+                rtn.append(variable)
+        for scratchpad in self._scratchpads:
+            if scratchpad.name in ["stack", "result"]:
+                continue
+            rtn.append(scratchpad)
+        return rtn
+
     def add_var(self, var: GrammarTree):
         rtn = Variable(var)
         self._vars[var["name"]] = rtn
@@ -87,6 +98,7 @@ class Variable:
     def __init__(self, var: GrammarTree):
         self.type = var["type"]
         self.name = var["name"]
+        self.sub = None
         self.is_pointer = var["_block_name"] == "pointer_type"
         self.is_global = var["_global"]
         self.size = 1

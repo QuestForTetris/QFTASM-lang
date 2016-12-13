@@ -147,18 +147,13 @@ class FileInterpreter:
             for var in sub.local_store.offsets:
                 new = copy.deepcopy(var)
                 new.name = sub.name + "_" + new.name
+                new.sub = sub.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
         self.global_store.add_subroutine(CustomVariable(name="stack",
                                                         is_pointer=True,
                                                         is_global=True))
-        self.global_store.add_subroutine(CustomVariable(name="operation_tmp_1",
-                                                        is_pointer=False,
-                                                        is_global=True))
-        self.global_store.add_subroutine(CustomVariable(name="operation_tmp_2",
-                                                        is_pointer=False,
-                                                        is_global=True))
-        self.global_store.add_subroutine(CustomVariable(name="operation_tmp_3",
+        self.global_store.add_subroutine(CustomVariable(name="result",
                                                         is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
