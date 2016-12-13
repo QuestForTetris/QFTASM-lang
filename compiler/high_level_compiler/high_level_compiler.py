@@ -91,13 +91,16 @@ class GlobalLocalStoreHelper:
                 #Now replace the variables and replace it
                 *compiled, (rtn_stmt, result) = inline.compile()
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
-                inline_vars = inline.args + [result]
-                rtn.extend(self.replace_variables(compiled, inline_vars, vars))
+                rtn.extend(self.replace_variables(compiled, inline.args, vars[:2]))
+                rtn.append(("assign", vars[2], result))
+                #inline_vars = inline.args + [result]
+                #rtn.extend(self.replace_variables(compiled, inline_vars, vars))
                 break
         else:
             raise NotImplementedError("Operator `{}` not implemented for vars `{}` and result `{}`".format(operator,
                                                                                                            [var.type for var in vars[:-1]],
                                                                                                            vars[-1].type))
+
         return rtn
 
     @staticmethod
@@ -160,8 +163,8 @@ class FileInterpreter:
         for inline in self.inlines:
             for arg in inline.args:
                 inline.local_store.remove(arg)
-            if "rtn" in inline.local_store:
-                inline.local_store.remove("rtn")
+            #if "rtn" in inline.local_store:
+            #    inline.local_store.remove("rtn")
             inline.local_store.finalise()
             for var in inline.local_store.offsets:
                 new = copy.deepcopy(var)
@@ -177,6 +180,7 @@ class FileInterpreter:
                                                         is_pointer=True,
                                                         is_global=True))
         self.global_store.finalise()
+        print(self.global_store)
         return rtn
 
 
