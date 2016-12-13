@@ -165,8 +165,8 @@ class FileInterpreter:
         for inline in self.inlines:
             for arg in inline.args:
                 inline.local_store.remove(arg)
-            #if "rtn" in inline.local_store:
-            #    inline.local_store.remove("rtn")
+            if "rtn" in inline.local_store and not inline.unsafe:
+                inline.local_store.remove("rtn")
             inline.local_store.finalise()
             for var in inline.local_store.offsets:
                 new = copy.deepcopy(var)

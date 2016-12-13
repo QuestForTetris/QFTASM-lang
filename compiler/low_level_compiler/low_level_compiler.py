@@ -20,10 +20,9 @@ class FileInterpreter:
         self.current_sub = None
         compiled = []
         for instruction in instruction_list:
-            print(instruction)
             assert instruction[0] in self.compilers
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
-        print("\n".join(compiled))
+        #print("\n".join(compiled))
         compiled = self.add_jumps(compiled)
         print("\n".join(compiled))
 
@@ -103,7 +102,6 @@ class FileInterpreter:
                 compiled[i] = instruction % eval(str(i)+jump)
             compiled[i] = str(i+1)+". "+compiled[i]
         return compiled
-
 
     def parse_variable(self, variable: Variable) -> str:
         if not isinstance(variable, Variable):
