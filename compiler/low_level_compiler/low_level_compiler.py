@@ -20,9 +20,11 @@ class FileInterpreter:
         self.current_sub = None
         compiled = []
         for instruction in instruction_list:
-            #print(instruction)
+            print(instruction)
             assert instruction[0] in self.compilers
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
+        print("\n".join(compiled))
+        compiled = self.add_jumps(compiled)
         print("\n".join(compiled))
 
     def sub_compiler(self, status: str, name: str):
@@ -54,6 +56,7 @@ class FileInterpreter:
         return rtn
 
     def assign_interpreter(self, variable, value):
+        #print("ASSIGN", variable, variable.offset, value)
         return ["MLZ -1 {} {}".format(self.parse_variable(value),
                                       self.parse_result(variable))]
 
@@ -83,6 +86,24 @@ class FileInterpreter:
 
     def push_stack(self, address: str):
         return ["PUSH {}".format(address)]
+
+    def add_jumps(self, compiled):
+        for i, instruction in enumerate(compiled):
+            instruction, semi, jump = instruction.partition(";")
+            if semi:
+                jump = jump.strip()
+                if jump[0] not in "+-":
+                    jump_offset = compiled.index("#"+jump)
+                    jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
+                    compiled[i] = instruction.format(jump_offset)
+        compiled = [inst for inst in compiled if not inst.startswith("#")]
+        for i, instruction in enumerate(compiled):
+            instruction, semi, jump = instruction.partition(";")
+            if semi:
+                compiled[i] = instruction % eval(str(i)+jump)
+            compiled[i] = str(i+1)+". "+compiled[i]
+        return compiled
+
 
     def parse_variable(self, variable: Variable) -> str:
         if not isinstance(variable, Variable):
