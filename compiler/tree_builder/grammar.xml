@@ -54,6 +54,9 @@
     </define>
     <define name="inline">
         <block name="two_op">
+            <optional name="unsafe">
+                <token exact_type="NAME" string="unsafe"/>
+            </optional>
             <token exact_type="NAME" string="operator"/>
             <token exact_type="LPAR"/>
             <stmt name="type_var"/>
@@ -68,6 +71,9 @@
             <token exact_type="DEDENT"/>
         </block>
         <block name="one_op">
+            <optional name="unsafe">
+                <token exact_type="NAME" string="unsafe"/>
+            </optional>
             <token exact_type="NAME" string="operator"/>
             <stmt name="single_op"/>
             <token exact_type="LPAR"/>

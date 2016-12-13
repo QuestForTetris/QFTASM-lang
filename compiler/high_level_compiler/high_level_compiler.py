@@ -91,10 +91,12 @@ class GlobalLocalStoreHelper:
                 #Now replace the variables and replace it
                 *compiled, (rtn_stmt, result) = inline.compile()
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
-                rtn.extend(self.replace_variables(compiled, inline.args, vars[:2]))
-                rtn.append(("assign", vars[2], result))
-                #inline_vars = inline.args + [result]
-                #rtn.extend(self.replace_variables(compiled, inline_vars, vars))
+                if inline.unsafe:
+                    rtn.extend(self.replace_variables(compiled, inline.args, vars[:2]))
+                    rtn.append(("assign", vars[2], result))
+                else:
+                    inline_vars = inline.args + [result]
+                    rtn.extend(self.replace_variables(compiled, inline_vars, vars))
                 break
         else:
             raise NotImplementedError("Operator `{}` not implemented for vars `{}` and result `{}`".format(operator,
@@ -236,13 +238,14 @@ class InlineInterpreter:
         self.global_store = global_store
         self.local_store = VariableStore()
         tree = tree["inline"]
-        if tree["_block_name"] == "two_op":
+        if tree["_block_name"] == "two_op" or ("_block_name_2" in tree and tree["_block_name_2"] == "two_op"):
             self.operator = tree["operator"]["_block_name"]
             args = [tree["type_var"], tree["type_var_2"]]
         else:
             self.operator = tree["single_op"]["_block_name"]
             args = [tree["type_var"]]
         self.args = [self.local_store.add_var(var) for var in args]
+        self.unsafe = tree["_unsafe"]
         stmts = tree["stmts"]["stmts"]
         self.rtn_type = tree["rtn_type"]
         self.stmts = []

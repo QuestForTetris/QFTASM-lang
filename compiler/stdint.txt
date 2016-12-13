@@ -44,19 +44,19 @@ operator (int a == int b) -> int
 operator (int a != int b) -> int
     return __XOR__(a, b)
 
-operator (int a % int b) -> int
+unsafe operator (int a % int b) -> int
     int rtn = a
     while (rtn >= b) do
         rtn -= b
     return rtn
 
-operator (int a * int b) -> int
+unsafe operator (int a * int b) -> int
     int rtn = 0
     for(int i = 0; i < b; i+=1)
       rtn += a
     return rtn
 
-operator (int a ** int b) -> int
+unsafe operator (int a ** int b) -> int
     int rtn = 1
     for(int i = 0; i < b; i+=1)
       rtn *= a
