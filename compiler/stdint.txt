@@ -49,3 +49,9 @@ operator (int a % int b) -> int
     while (rtn >= b) do
         rtn -= b
     return rtn
+
+operator (int a * int b) -> int
+    int rtn = 0
+    for(int i = 0; i < b; i+=1)
+      rtn += a
+    return rtn
