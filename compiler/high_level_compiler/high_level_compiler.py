@@ -161,7 +161,7 @@ class FileInterpreter:
             inline.local_store.finalise()
             for var in inline.local_store.offsets:
                 new = copy.deepcopy(var)
-                new.name = "op({}, {})".format(inline.operator, new.name)
+                new.name = "op({}:{})".format(inline.operator, new.name)
                 new.sub = "op({})".format(inline.operator)
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)

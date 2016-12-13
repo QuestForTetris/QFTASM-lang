@@ -1,9 +1,4 @@
 #include stdint
 
-sub get_four() -> int
-    int a = 1
-    int b = 3
-    return a+b
-
 sub main
-    int start = get_four()
+    int n = 4*5
