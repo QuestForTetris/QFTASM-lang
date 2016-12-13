@@ -44,6 +44,12 @@ class VariableStore:
     def get_name(var: GrammarTree):
         return var[var["_block_name"]]["name"]
 
+    def remove(self, var):
+        try:
+            del self._vars[var.name]
+        except AttributeError:
+            del self._vars[var]
+
     def filter_subroutine(self, sub_name):
         rtn = []
         for variable in self._vars.values():

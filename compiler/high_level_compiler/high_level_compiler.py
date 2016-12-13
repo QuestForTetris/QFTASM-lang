@@ -25,7 +25,7 @@ class GlobalLocalStoreHelper:
             return self._global_store[variable]
         elif variable in self._local_store:
             return self._local_store[variable]
-        assert "type_var" in variable, "Variable, %s, has no type at definition" % VariableStore.get_name(variable)
+        assert "type_var" in variable, "Variable `{}` has no type at definition".format(VariableStore.get_name(variable))
         type_var = variable["type_var"]
         is_global = type_var["_global"]
         if is_global:
@@ -153,6 +153,18 @@ class FileInterpreter:
                 new.sub = sub.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
+        for inline in self.inlines:
+            for arg in inline.args:
+                inline.local_store.remove(arg)
+            if "rtn" in inline.local_store:
+                inline.local_store.remove("rtn")
+            inline.local_store.finalise()
+            for var in inline.local_store.offsets:
+                new = copy.deepcopy(var)
+                new.name = "op({}, {})".format(inline.operator, new.name)
+                new.sub = "op({})".format(inline.operator)
+                if new.name not in self.global_store:
+                    self.global_store.add_named(new)
         self.global_store.add_subroutine(CustomVariable(name="result",
                                                         is_pointer=False,
                                                         is_global=True))
@@ -222,7 +234,7 @@ class InlineInterpreter:
         else:
             self.operator = tree["single_op"]["_block_name"]
             args = [tree["type_var"]]
-        self.args = [self.local_store.add_var(arg) for arg in args]
+        self.args = [self.local_store.add_var(var) for var in args]
         stmts = tree["stmts"]["stmts"]
         self.rtn_type = tree["rtn_type"]
         self.stmts = []
