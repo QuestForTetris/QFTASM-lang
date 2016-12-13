@@ -1,5 +1,9 @@
+#include stdint
+
 sub get_four() -> int
-    return 4
+    int a = 1
+    int b = 3
+    return a+b
 
 sub main
     int start = get_four()

@@ -127,7 +127,10 @@ class FileInterpreter:
         self.subs = []
         self.structs = []
         self.inlines = []
-        self.lists = {"sub": self.subs, "struct": self.structs, "inline": self.inlines, "newline": []}
+        self.lists = {"sub": self.subs,
+                      "struct": self.structs,
+                      "inline": self.inlines,
+                      "newline": []}
         for stmt in stmts:
             self.lists[stmt["_block_name"]].append(self.file_types[stmt["_block_name"]](self.global_store, self.inlines, stmt))
         assert "main" in [sub.name for sub in self.subs]
@@ -150,13 +153,14 @@ class FileInterpreter:
                 new.sub = sub.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
-        self.global_store.add_subroutine(CustomVariable(name="stack",
-                                                        is_pointer=True,
-                                                        is_global=True))
         self.global_store.add_subroutine(CustomVariable(name="result",
                                                         is_pointer=False,
                                                         is_global=True))
+        self.global_store.add_subroutine(CustomVariable(name="stack",
+                                                        is_pointer=True,
+                                                        is_global=True))
         self.global_store.finalise()
+        print(self.global_store)
         return rtn
 
 
@@ -176,8 +180,6 @@ class SubroutineInterpreter:
         self.rtn_type = "null"
         if tree["_rtn_type"]:
             self.rtn_type = tree["rtn_type"]
-        self.result = CustomVariable("result", type=self.rtn_type)
-        self.local_store.add_named(self.result)
         self.stmts = []
         for stmt in stmts:
             self.stmts.append(StmtInterpreter(self.global_store, self.local_store, inlines, stmt))
@@ -201,10 +203,10 @@ class SubroutineInterpreter:
 
     def compile(self):
         rtn = []
-        rtn.append(("sub", "start", self.name, self.result))
+        rtn.append(("sub", "start", self.name))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
-        rtn.append(("sub", "end", self.name, self.result))
+        rtn.append(("sub", "end", self.name))
         return rtn
 
 

@@ -18,7 +18,6 @@ class FileInterpreter:
         }
         self.global_store = global_store
         self.current_sub = None
-        self.current_result = None
         compiled = []
         for instruction in instruction_list:
             #print(instruction)
@@ -26,9 +25,8 @@ class FileInterpreter:
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
         print("\n".join(compiled))
 
-    def sub_compiler(self, status: str, name: str, result: Variable):
+    def sub_compiler(self, status: str, name: str):
         self.current_sub = name
-        self.current_result = result
         if status == "start":
             return ["#Start {}".format(name)]
         else:
