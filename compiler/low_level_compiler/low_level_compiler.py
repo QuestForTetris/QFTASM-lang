@@ -61,23 +61,23 @@ class FileInterpreter:
 
     def if_interpreter(self, status, if_id, condition):
         if status == "end":
-            return ["#End if_%s" % if_id]
+            return ["#End if_{}".format(if_id)]
         condition = self.parse_variable(condition)
-        rtn = ["#Start if_%s" % if_id,
-               "MNZ %s {} 0; End if_%s" % (condition, if_id),
+        rtn = ["#Start if_{}".format(if_id),
+               "MNZ {} {} 0; End if_{}".format(condition, "{}", if_id),
                "MLZ 0 0 0"]
         return rtn
 
     def while_interpreter(self, status, while_id, condition):
         if status == "end":
             condition = self.parse_variable(condition)
-            rtn = ["#End while_%s" % while_id,
-                   "MNZ %s {} 0; Start while_%s" % (condition, while_id),
+            rtn = ["#End while_{}".format(while_id),
+                   "MNZ {} {} 0; Start while_{}".format(condition, "{}", while_id),
                    "MLZ 0 0 0"]
             return rtn
-        rtn = ["MLZ -1 {} 0; End while_%s" % while_id,
+        rtn = ["MLZ -1 {} 0; End while_{}".format("{}", while_id),
                "MLZ 0 0 0",
-               "#Start while_%s" % while_id]
+               "#Start while_{}".format(while_id)]
         return rtn
 
     def pop_stack(self, address: str):
