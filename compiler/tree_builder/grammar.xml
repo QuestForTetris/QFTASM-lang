@@ -84,6 +84,10 @@
     <define name="typed_parameters">
         <block>
             <token exact_type="LPAR"/>
+            <token exact_type="RPAR"/>
+        </block>
+        <block>
+            <token exact_type="LPAR"/>
             <stmt name="type_var"/>
             <optional name="further_params">
                 <stmt name="typed_arg_list"/>
@@ -92,6 +96,10 @@
         </block>
     </define>
     <define name="parameters">
+        <block>
+            <token exact_type="LPAR"/>
+            <token exact_type="RPAR"/>
+        </block>
         <block>
             <token exact_type="LPAR"/>
             <stmt name="generic_value"/>

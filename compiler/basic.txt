@@ -1,11 +1,5 @@
+sub get_four() -> int
+    return 4
+
 sub main
-    int start = 2
-    int cur_prime = 2
-    while 1 do
-        start = start + 1
-        int is_prime = 1
-        for (int i = 2; i < start; i += 1)
-            if not start % i
-                is_prime =  0
-        if is_prime
-            cur_prime = start
+    int start = get_four()
