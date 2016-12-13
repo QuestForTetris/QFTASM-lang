@@ -30,7 +30,15 @@ operator (int a < int b) -> int
 operator ~(int a) -> int
     return __ANT__(-1, a)
 
-operator (int a == int b) -> bool
+operator not(int a) -> int
+    int rtn = 1
+    rtn = __MNZ__(a, 0)
+    return rtn
+
+operator not(bool a) -> bool
+    return __XOR__(a, 1)
+
+operator (int a == int b) -> int
     return not __XOR__(a, b)
 
 operator (int a != int b) -> int
