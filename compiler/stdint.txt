@@ -55,3 +55,9 @@ operator (int a * int b) -> int
     for(int i = 0; i < b; i+=1)
       rtn += a
     return rtn
+
+operator (int a ** int b) -> int
+    int rtn = 1
+    for(int i = 0; i < b; i+=1)
+      rtn *= a
+    return rtn

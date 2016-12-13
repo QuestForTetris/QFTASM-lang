@@ -229,6 +229,9 @@
         <block name="*=">
             <token exact_type="STAREQUAL"/>
         </block>
+        <block name="**=">
+            <token exact_type="DOUBLESTAREQUAL"/>
+        </block>
         <block name="/=">
             <token exact_type="SLASHEQUAL"/>
         </block>
@@ -263,6 +266,9 @@
         </block>
         <block name="*">
             <token exact_type="STAR"/>
+        </block>
+        <block name="**">
+            <token exact_type="DOUBLESTAR"/>
         </block>
         <block name="/">
             <token exact_type="SLASH"/>
