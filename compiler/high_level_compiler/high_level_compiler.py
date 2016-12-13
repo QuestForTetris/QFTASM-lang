@@ -91,27 +91,31 @@ class GlobalLocalStoreHelper:
                 #Now replace the variables and replace it
                 *compiled, (rtn_stmt, result) = inline.compile()
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
-                inline_vars = inline.args+[result]
-                zipped_args = dict(zip(map(id, inline_vars), vars))
-                modded_operation = []
-                for inst in compiled:
-                    modded_instruction = []
-                    if inst[0] == "call_sub":
-                        inst = list(inst)
-                        inst[2] = [zipped_args.get(id(operand), operand) for operand in inst[2]]
-                    for operand in inst:
-                        if operand in inline_vars:
-                            modded_instruction.append(zipped_args[id(operand)])
-                        else:
-                            modded_instruction.append(operand)
-                    modded_operation.append(tuple(modded_instruction))
-                rtn.extend(modded_operation)
+                inline_vars = inline.args + [result]
+                rtn.extend(self.replace_variables(compiled, inline_vars, vars))
                 break
         else:
             raise NotImplementedError("Operator `{}` not implemented for vars `{}` and result `{}`".format(operator,
                                                                                                            [var.type for var in vars[:-1]],
                                                                                                            vars[-1].type))
         return rtn
+
+    @staticmethod
+    def replace_variables(instructions, find, replace):
+        zipped_args = dict(zip(map(id, find), replace))
+        modded_operation = []
+        for inst in instructions:
+            modded_instruction = []
+            if inst[0] == "call_sub":
+                inst = list(inst)
+                inst[2] = [zipped_args.get(id(operand), operand) for operand in inst[2]]
+            for operand in inst:
+                if operand in find:
+                    modded_instruction.append(zipped_args[id(operand)])
+                else:
+                    modded_instruction.append(operand)
+            modded_operation.append(tuple(modded_instruction))
+        return modded_operation
 
 
 class FileInterpreter:
@@ -144,7 +148,6 @@ class FileInterpreter:
         rtn = []
         for sub in sorted(self.subs, key=lambda sub: sub.name == "main", reverse=True):
             rtn.extend(sub.compile())
-
         for sub in self.subs:
             sub.local_store.finalise()
             for var in sub.local_store.offsets:
@@ -153,6 +156,7 @@ class FileInterpreter:
                 new.sub = sub.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
+                rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
         for inline in self.inlines:
             for arg in inline.args:
                 inline.local_store.remove(arg)
@@ -165,6 +169,7 @@ class FileInterpreter:
                 new.sub = "op({})".format(inline.operator)
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
+                rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
         self.global_store.add_subroutine(CustomVariable(name="result",
                                                         is_pointer=False,
                                                         is_global=True))
@@ -172,7 +177,6 @@ class FileInterpreter:
                                                         is_pointer=True,
                                                         is_global=True))
         self.global_store.finalise()
-        print(self.global_store)
         return rtn
 
 
@@ -283,12 +287,9 @@ class AssignInterpreter(GlobalLocalStoreHelper):
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
-        if rtn:
-            final = list(rtn.pop())
-            final[-1] = self.var
-            rtn.append(tuple(final))
-        else:
-            rtn = [("assign", self.var, scratch)]
+        if not rtn:
+            rtn.append(("assign", self.var, self.value))
+        rtn = self.replace_variables(rtn, [scratch], [self.var])
         self.free_scratch(scratch)
         return rtn
 
