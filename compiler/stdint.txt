@@ -45,9 +45,18 @@ operator (int a != int b) -> int
     return __XOR__(a, b)
 
 unsafe operator (int a % int b) -> int
-    int rtn = a
-    while (rtn >= b) do
-        rtn -= b
+    int rtn = 0
+    while (rtn <= a) do
+        rtn += b
+    rtn -= a
+    return b-rtn
+
+operator (int a / int b) -> int
+    int rtn = 0-1
+    int scratch =  0
+    while (scratch <= a) do
+        scratch += b
+        rtn += 1
     return rtn
 
 unsafe operator (int a * int b) -> int
