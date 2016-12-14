@@ -80,7 +80,6 @@ unsafe operator (int a ** int b) -> int
       rtn *= a
     return rtn
 
-
 unsafe operator (int a / int b) -> int
     int rtn = 0-1
     int scratch =  0

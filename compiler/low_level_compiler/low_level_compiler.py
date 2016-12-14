@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from high_level_compiler.variables import VariableStore, Variable
+from high_level_compiler.variables import VariableStore, Variable, id_gen
 
 
 class FileInterpreter:
@@ -20,11 +20,12 @@ class FileInterpreter:
         self.current_sub = None
         compiled = []
         for instruction in instruction_list:
+            #print(instruction)
             assert instruction[0] in self.compilers
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
-        #print("\n".join(compiled))
-        compiled = self.add_jumps(compiled)
         print("\n".join(compiled))
+        compiled = self.add_jumps(compiled)
+        #print("\n".join(compiled))
 
     def sub_compiler(self, status: str, name: str):
         self.current_sub = name
@@ -40,8 +41,10 @@ class FileInterpreter:
         variables = self.global_store.filter_subroutine(self.current_sub)
         for var in variables:
             rtn.extend(self.push_stack(self.parse_variable(var)))
-        rtn.extend(self.push_stack("{}; +2"))
-        rtn.append("MLZ -1 {} 0; {}".format("{}", sub_name))
+        uuid = next(id_gen)
+        rtn.extend(self.push_stack("{}", "EndCall {}_{}".format(sub_name, uuid)))
+        rtn.append("MLZ -1 {} 0; Start {}".format("{}", sub_name))
+        rtn.append("#EndCall {}_{}".format(sub_name, uuid))
         for var in reversed(variables):
             rtn.extend(self.pop_stack(self.parse_result(var)))
         rtn.append("MLZ -1 {} {}".format(self.parse_variable(self.global_store["result"]),
@@ -83,7 +86,9 @@ class FileInterpreter:
     def pop_stack(self, address: str):
         return ["POP {}".format(address)]
 
-    def push_stack(self, address: str):
+    def push_stack(self, address: str, label: str = ""):
+        if label:
+            return ["PUSH {}; {}".format(address, label)]
         return ["PUSH {}".format(address)]
 
     def add_jumps(self, compiled):
@@ -93,13 +98,10 @@ class FileInterpreter:
                 jump = jump.strip()
                 if jump[0] not in "+-":
                     jump_offset = compiled.index("#"+jump)
-\                    jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
+                    jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
                     compiled[i] = instruction.format(jump_offset)
         compiled = [inst for inst in compiled if not inst.startswith("#")]
         for i, instruction in enumerate(compiled):
-            instruction, semi, jump = instruction.partition(";")
-            if semi:
-                compiled[i] = instruction % eval(str(i)+jump)
             compiled[i] = "{}. {};".format(i+1, compiled[i])
         return compiled
 
