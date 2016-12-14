@@ -93,14 +93,14 @@ class FileInterpreter:
                 jump = jump.strip()
                 if jump[0] not in "+-":
                     jump_offset = compiled.index("#"+jump)
-                    jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
+\                    jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
                     compiled[i] = instruction.format(jump_offset)
         compiled = [inst for inst in compiled if not inst.startswith("#")]
         for i, instruction in enumerate(compiled):
             instruction, semi, jump = instruction.partition(";")
             if semi:
                 compiled[i] = instruction % eval(str(i)+jump)
-            compiled[i] = str(i+1)+". "+compiled[i]
+            compiled[i] = "{}. {};".format(i+1, compiled[i])
         return compiled
 
     def parse_variable(self, variable: Variable) -> str:
