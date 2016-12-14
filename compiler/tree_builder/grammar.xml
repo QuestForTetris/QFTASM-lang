@@ -260,7 +260,7 @@
             <token exact_type="RIGHTSHIFTEQUAL"/>
         </block>
         <block name="&gt;&gt;=">
-            <token exact_type="RIGHTSHIFTEQUAL"/>
+            <token exact_type="LEFTSHIFTEQUAL"/>
         </block>
         <block name="**=">
             <token exact_type="DOUBLESTAREQUAL"/>
