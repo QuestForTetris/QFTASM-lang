@@ -1,5 +1,5 @@
 #include stdint
 
 sub main
-    int n = 5
-    n = 3**4
+    int n = 4
+    n <<= 2

@@ -53,6 +53,12 @@ operator (int a == int b) -> int
 operator (int a != int b) -> int
     return __XOR__(a, b)
 
+operator (int a << int b) -> int
+    return __SL__(a, b)
+
+operator (int a >> int b) -> int
+    return __SRL__(a, b)
+
 unsafe operator (int a % int b) -> int
     int rtn = 0
     while (rtn <= a) do

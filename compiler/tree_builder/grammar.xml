@@ -256,6 +256,9 @@
         <block name="&lt;&lt;=">
             <token exact_type="LEFTSHIFTEQUAL"/>
         </block>
+        <block name="&rt;&rt;=">
+            <token exact_type="RIGHTSHIFTEQUAL"/>
+        </block>
         <block name="&gt;&gt;=">
             <token exact_type="RIGHTSHIFTEQUAL"/>
         </block>
@@ -308,6 +311,12 @@
         </block>
         <block name="&gt;">
             <token exact_type="GREATER"/>
+        </block>
+        <block name="&lt;&lt;">
+            <token exact_type="LEFTSHIFT"/>
+        </block>
+        <block name="&rt;&rt;">
+            <token exact_type="RIGHTSHIFT"/>
         </block>
     </define>
     <define name="single_op">
