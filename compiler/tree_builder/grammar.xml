@@ -256,7 +256,7 @@
         <block name="&lt;&lt;=">
             <token exact_type="LEFTSHIFTEQUAL"/>
         </block>
-        <block name="&rt;&rt;=">
+        <block name="&gt;&gt;=">
             <token exact_type="RIGHTSHIFTEQUAL"/>
         </block>
         <block name="&gt;&gt;=">
@@ -315,7 +315,7 @@
         <block name="&lt;&lt;">
             <token exact_type="LEFTSHIFT"/>
         </block>
-        <block name="&rt;&rt;">
+        <block name="&gt;&gt;">
             <token exact_type="RIGHTSHIFT"/>
         </block>
     </define>
