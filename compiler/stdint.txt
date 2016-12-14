@@ -79,11 +79,3 @@ unsafe operator (int a ** int b) -> int
     for(int i = 0; i < b; i+=1)
       rtn *= a
     return rtn
-
-unsafe operator (int a / int b) -> int
-    int rtn = 0-1
-    int scratch =  0
-    while (scratch <= a) do
-        scratch += b
-        rtn += 1
-    return rtn
