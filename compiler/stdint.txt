@@ -38,6 +38,15 @@ operator not(int a) -> int
 operator not(bool a) -> bool
     return __XOR__(a, 1)
 
+operator (int a ^ int b) -> int
+    return __XOR__(a, b)
+
+operator (int a & int b) -> int
+    return __AND__(a, b)
+
+operator (int a | int b) -> int
+    return __OR__(a, b)
+
 operator (int a == int b) -> int
     return not __XOR__(a, b)
 
@@ -69,4 +78,13 @@ unsafe operator (int a ** int b) -> int
     int rtn = 1
     for(int i = 0; i < b; i+=1)
       rtn *= a
+    return rtn
+
+
+unsafe operator (int a / int b) -> int
+    int rtn = 0-1
+    int scratch =  0
+    while (scratch <= a) do
+        scratch += b
+        rtn += 1
     return rtn
