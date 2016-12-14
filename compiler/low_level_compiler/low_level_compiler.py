@@ -23,9 +23,9 @@ class FileInterpreter:
             #print(instruction)
             assert instruction[0] in self.compilers
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
-        print("\n".join(compiled))
-        compiled = self.add_jumps(compiled)
         #print("\n".join(compiled))
+        compiled = self.add_jumps(compiled)
+        print("\n".join(compiled))
 
     def sub_compiler(self, status: str, name: str):
         self.current_sub = name

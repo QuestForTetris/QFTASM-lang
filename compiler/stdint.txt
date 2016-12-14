@@ -5,7 +5,7 @@ operator (int a - int b) -> int
     return __SUB__(a, b)
 
 operator -(int a) -> int
-    return 0-a
+    return __SUB__(0, a)
 
 operator (int a >= int b) -> int
     int rtn = 1
