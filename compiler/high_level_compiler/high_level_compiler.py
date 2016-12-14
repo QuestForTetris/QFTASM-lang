@@ -1,7 +1,4 @@
-try:
-    from high_level_compiler.variables import VariableStore, Variable, ScratchVariable, CustomVariable, _id_gen
-except ImportError:
-    from variables import VariableStore, Variable, ScratchVariable, CustomVariable, _id_gen
+from high_level_compiler.variables import VariableStore, Variable, ScratchVariable, CustomVariable, _id_gen
 from tree_builder.tree_builder import build_tree, GrammarTree
 import copy
 import itertools
