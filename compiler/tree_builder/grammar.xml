@@ -282,6 +282,10 @@
         <block name="|">
             <token exact_type="VBAR"/>
         </block>
+        <block name="&amp;&amp;">
+            <token exact_type="AMPER"/>
+            <token exact_type="AMPER"/>
+        </block>
         <block name="&amp;">
             <token exact_type="AMPER"/>
         </block>
