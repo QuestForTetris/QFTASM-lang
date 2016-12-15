@@ -33,9 +33,9 @@ class VariableStore:
 
     def __repr__(self):
         try:
-            return repr(self.offsets)
+            return repr(list(enumerate([0]+self.offsets)))
         except AttributeError:
-            return repr(self._vars)
+            return repr(list(enumerate([0]+self._vars)))
 
     def __iter__(self):
         return iter(self.offsets)
@@ -56,13 +56,24 @@ class VariableStore:
             if variable.sub == sub_name:
                 rtn.append(variable)
         for scratchpad in self._scratchpads:
-            if scratchpad.name in ["stack", "result"]:
+            if scratchpad.name in ["<stack>", "<result>"]:
                 continue
             rtn.append(scratchpad)
         return rtn
 
-    def add_var(self, var: GrammarTree):
-        rtn = Variable(var)
+    def get_ordered_params(self, sub_name):
+        var_dict = {}
+        for variable in self._vars.values():
+            if variable.sub == sub_name and variable.param_var is not None:
+                var_dict[variable.param_var] = variable
+        rtn = []
+        for i in sorted(var_dict.keys()):
+            assert len(rtn) == i, "Want to convert a dict of indices to a list with corresponding values here"
+            rtn.append(var_dict[i])
+        return rtn
+
+    def add_var(self, var: GrammarTree, param_var=None):
+        rtn = Variable(var, param_var=param_var)
         self._vars[var["name"]] = rtn
         return rtn
 
@@ -101,7 +112,7 @@ class VariableStore:
 
 
 class Variable:
-    def __init__(self, var: GrammarTree):
+    def __init__(self, var: GrammarTree, param_var):
         self.type = var["type"]
         self.name = var["name"]
         self.sub = None
@@ -109,6 +120,7 @@ class Variable:
         self.is_global = var["_global"]
         self.size = 1
         self.offset = None
+        self.param_var = param_var
 
     def __str__(self):
         return self.name

@@ -90,7 +90,7 @@ class GlobalLocalStoreHelper:
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
                 if inline.unsafe:
                     rtn.extend(self.replace_variables(compiled, inline.args, vars[:2]))
-                    rtn.append(("assign", vars[2], result))
+                    rtn.append(("assign", vars[-1], result))
                 else:
                     inline_vars = inline.args + [result]
                     rtn.extend(self.replace_variables(compiled, inline_vars, vars))
@@ -172,11 +172,11 @@ class FileInterpreter:
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
                 rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
-        self.global_store.add_subroutine(CustomVariable(name="result",
+        self.global_store.add_subroutine(CustomVariable(name="<result>",
                                                         is_pointer=False,
                                                         is_global=True))
-        self.global_store.add_subroutine(CustomVariable(name="stack",
-                                                        is_pointer=True,
+        self.global_store.add_subroutine(CustomVariable(name="<stack>",
+                                                        is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
         print(self.global_store)
@@ -214,11 +214,11 @@ class SubroutineInterpreter:
         rtn = "\n\t"+"\n\t".join(rtn)
         return pre+rtn
 
-    def add_params(self, tree: GrammarTree):
+    def add_params(self, tree: GrammarTree, param_id=0):
         if "type_var" in tree:
-            self.params.append(self.local_store.add_var(tree["type_var"]))
+            self.params.append(self.local_store.add_var(tree["type_var"], param_id))
             if tree["_further_params"]:
-                self.add_params(tree["typed_arg_list"])
+                self.add_params(tree["typed_arg_list"], param_id+1)
 
     def compile(self):
         rtn = []

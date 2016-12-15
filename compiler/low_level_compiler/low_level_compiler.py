@@ -19,8 +19,10 @@ class FileInterpreter:
         self.global_store = global_store
         self.current_sub = None
         compiled = []
+        compiled.append("MLZ -1 {} {}".format(self.global_store["<stack>"].offset+1,
+                                              self.parse_result(self.global_store["<stack>"])))
         for instruction in instruction_list:
-            #print(instruction)
+            print(instruction)
             assert instruction[0] in self.compilers
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
         #print("\n".join(compiled))
@@ -31,6 +33,9 @@ class FileInterpreter:
         self.current_sub = name
         if status == "start":
             return ["#Start {}".format(name)]
+        elif name == "main":
+            return ["#End {}".format(name),
+                    "MLZ -1 -1 0"]
         else:
             return ["#End {}".format(name)]
 
@@ -38,23 +43,29 @@ class FileInterpreter:
         if sub_name in FileInterpreter.opcodes:
             return ["{} {} {} {}".format(sub_name[2:-2], *map(self.parse_variable, args), self.parse_result(result))]
         rtn = []
+        for param, arg in zip(args, self.global_store.get_ordered_params(sub_name)):
+            print(param, arg.offset)
+            rtn.append("MLZ -1 {} {}".format(self.parse_variable(param),
+                                             self.parse_result(arg)))
         variables = self.global_store.filter_subroutine(self.current_sub)
         for var in variables:
             rtn.extend(self.push_stack(self.parse_variable(var)))
         uuid = next(id_gen)
         rtn.extend(self.push_stack("{}", "EndCall {}_{}".format(sub_name, uuid)))
         rtn.append("MLZ -1 {} 0; Start {}".format("{}", sub_name))
+        rtn.append("MNZ 0 0 0")
         rtn.append("#EndCall {}_{}".format(sub_name, uuid))
         for var in reversed(variables):
             rtn.extend(self.pop_stack(self.parse_result(var)))
-        rtn.append("MLZ -1 {} {}".format(self.parse_variable(self.global_store["result"]),
+        rtn.append("MLZ -1 {} {}".format(self.parse_variable(self.global_store["<result>"]),
                                          self.parse_result(result)))
         return rtn
 
     def return_compiler(self, result):
         rtn = ["MLZ -1 {} {}".format(self.parse_variable(result),
-                                     self.parse_result(self.global_store["result"]))]
+                                     self.parse_result(self.global_store["<result>"]))]
         rtn.extend(self.pop_stack("0"))
+        rtn.append("MNZ 0 0 0")
         return rtn
 
     def assign_interpreter(self, variable, value):
@@ -84,12 +95,22 @@ class FileInterpreter:
         return rtn
 
     def pop_stack(self, address: str):
-        return ["POP {}".format(address)]
+        return ["SUB {} 1 {}".format(self.parse_variable(self.global_store["<stack>"]),
+                                     self.parse_result(self.global_store["<stack>"])),
+                "MLZ -1 {} {}".format("B"+str(self.global_store["<stack>"].offset),
+                                      address)
+                ]
 
     def push_stack(self, address: str, label: str = ""):
         if label:
-            return ["PUSH {}; {}".format(address, label)]
-        return ["PUSH {}".format(address)]
+            label = "; " + label
+        return ["MLZ -1 {} {}{}".format(address,
+                                        self.parse_variable(self.global_store["<stack>"]),
+                                        label),
+                "ADD {} 1 {}".format(self.parse_variable(self.global_store["<stack>"]),
+                                     self.parse_result(self.global_store["<stack>"]))
+                ]
+
 
     def add_jumps(self, compiled):
         for i, instruction in enumerate(compiled):
