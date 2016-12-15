@@ -35,6 +35,9 @@ unsafe operator not(int a) -> int
     rtn = __MNZ__(a, 0)
     return rtn
 
+operator not(bool a) -> bool
+    return __XOR__(a, 1)
+
 operator (int a ^ int b) -> int
     return __XOR__(a, b)
 
