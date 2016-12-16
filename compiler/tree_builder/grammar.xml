@@ -279,6 +279,10 @@
         <block name="/">
             <token exact_type="SLASH"/>
         </block>
+        <block name="||">
+            <token exact_type="VBAR"/>
+            <token exact_type="VBAR"/>
+        </block>
         <block name="|">
             <token exact_type="VBAR"/>
         </block>
