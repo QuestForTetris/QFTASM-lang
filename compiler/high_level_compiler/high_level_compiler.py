@@ -3,6 +3,7 @@ from tree_builder.tree_builder import build_tree, GrammarTree
 import copy
 import itertools
 
+
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = itertools.tee(iterable)
@@ -51,11 +52,13 @@ class GlobalLocalStoreHelper:
             return self.get_var(tree["generic_var"])
         assert False, "Failed to assign var_literal"
 
-    def free_scratch(self, scratch):
+    @staticmethod
+    def free_scratch(scratch):
         if isinstance(scratch, ScratchVariable):
             scratch.free()
 
-    def collect_value(self, value):
+    @staticmethod
+    def collect_value(value):
         if isinstance(value, LiteralInterpreter):
             return [], value.val
         if isinstance(value, Variable):
@@ -66,12 +69,16 @@ class GlobalLocalStoreHelper:
             return value.compile(), value.result
         raise SyntaxError("Unable to collect value from %s" % value.__class__.__name__)
 
-    def inline_operator(self, instruction):
+    def inline_operator(self, instruction, retype=False, rtn_type=None):
         operator, *vars = instruction
         rtn = []
         for inline in self._inlines:
             if inline.operator == operator:
                 skip = False
+                if retype:
+                    vars[-1].type = inline.rtn_type
+                if rtn_type is not None:
+                    vars[-1].type = rtn_type
                 for var, cmp_var in zip(vars, inline.args+[inline.rtn_type]):
                     try:
                         var_type = var.type
@@ -85,7 +92,7 @@ class GlobalLocalStoreHelper:
                         skip = True
                 if skip:
                     continue
-                #Now replace the variables and replace it
+                # Now replace the variables and replace it
                 *compiled, (rtn_stmt, result) = inline.compile()
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
                 assert result.type == inline.rtn_type, "Operator `{}{} -> {}` returned `{}`".format(operator, tuple(var.type for var in inline.args), inline.rtn_type, result.type)
@@ -149,7 +156,6 @@ class FileInterpreter:
         assert "main" in [sub.name for sub in self.subs]
 
     def __repr__(self):
-        #print("STRUCTS:", self.structs)
         rtn = "\n\n".join(str(sub) for sub in self.subs)
         return rtn
 
@@ -375,7 +381,7 @@ class IfInterpreter(GlobalLocalStoreHelper):
         extend, scratch = self.collect_value(self.condition)
         scratch_2 = self._global_store.add_scratchpad(type="bool")
         rtn.extend(extend)
-        rtn.extend(self.inline_operator(["not", scratch, scratch_2]))
+        rtn.extend(self.inline_operator(["not", scratch, scratch_2], rtn_type = "bool"))
         rtn.append(("if", "start", self.id, scratch_2))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
@@ -468,7 +474,7 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch_1)
             self.free_scratch(scratch_2)
         rtn.extend(extend)
-        rtn.extend(self.inline_operator([self.operator, scratch_1, scratch_2, self.result]))
+        rtn.extend(self.inline_operator([self.operator, scratch_1, scratch_2, self.result], retype=True))
         return rtn
 
 
