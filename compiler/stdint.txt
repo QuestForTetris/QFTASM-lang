@@ -7,22 +7,22 @@ operator (int a - int b) -> int
 operator -(int a) -> int
     return __SUB__(0, a)
 
-operator (int a >= int b) -> int
+operator (int a >= int b) -> bool
     int rtn = 1
     rtn = __MLZ__(a-b, 0)
     return rtn
 
-operator (int a <= int b) -> int
+operator (int a <= int b) -> bool
     int rtn = 1
     rtn = __MLZ__(b-a, 0)
     return rtn
 
-operator (int a > int b) -> int
+operator (int a > int b) -> bool
     int rtn = 0
     rtn = __MLZ__(b-a, 1)
     return rtn
 
-operator (int a < int b) -> int
+operator (int a < int b) -> bool
     int rtn = 0
     rtn = __MLZ__(a-b, 1)
     return rtn
@@ -30,13 +30,14 @@ operator (int a < int b) -> int
 operator ~(int a) -> int
     return __ANT__(-1, a)
 
-unsafe operator not(int a) -> int
-    int rtn = 1
+unsafe operator not(int a) -> bool
+    bool rtn = 1
     rtn = __MNZ__(a, 0)
     return rtn
 
 operator not(bool a) -> bool
-    return __XOR__(a, 1)
+    bool rtn = __XOR__(a, 1)
+    return rtn
 
 operator (int a ^ int b) -> int
     return __XOR__(a, b)

@@ -77,12 +77,12 @@ class VariableStore:
         self._vars[var["name"]] = rtn
         return rtn
 
-    def add_scratchpad(self):
+    def add_scratchpad(self, type="int"):
         for scratchpad in self._scratchpads:
             if scratchpad.being_used is False:
                 scratchpad.being_used = True
                 return scratchpad
-        rtn = ScratchVariable()
+        rtn = ScratchVariable(type)
         self._scratchpads.append(rtn)
         return rtn
 
@@ -140,8 +140,8 @@ class Variable:
 
 
 class ScratchVariable(Variable):
-    def __init__(self):
-        self.type = "int"
+    def __init__(self, type):
+        self.type = type
         self.name = "scratch_%s"%next(id_gen)
         self.is_pointer = False
         self.is_global = True

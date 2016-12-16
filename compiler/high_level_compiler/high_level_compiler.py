@@ -88,6 +88,7 @@ class GlobalLocalStoreHelper:
                 #Now replace the variables and replace it
                 *compiled, (rtn_stmt, result) = inline.compile()
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
+                assert result.type == inline.rtn_type, "Operator `{}{} -> {}` returned `{}`".format(operator, tuple(var.type for var in inline.args), inline.rtn_type, result.type)
                 if inline.unsafe:
                     rtn.extend(self.replace_variables(compiled, inline.args, vars[:2]))
                     rtn.append(("assign", vars[-1], result))
@@ -366,13 +367,15 @@ class IfInterpreter(GlobalLocalStoreHelper):
     def compile(self):
         rtn = []
         extend, scratch = self.collect_value(self.condition)
+        scratch_2 = self._global_store.add_scratchpad(type="bool")
         rtn.extend(extend)
-        rtn.extend(self.inline_operator(["not", scratch, scratch]))
-        rtn.append(("if", "start", self.id, scratch))
+        rtn.extend(self.inline_operator(["not", scratch, scratch_2]))
+        rtn.append(("if", "start", self.id, scratch_2))
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
         rtn.append(("if", "end", self.id, None))
         self.free_scratch(scratch)
+        self.free_scratch(scratch_2)
         return rtn
 
 
