@@ -97,9 +97,15 @@ class GlobalLocalStoreHelper:
                     rtn.extend(self.replace_variables(compiled, inline_vars, vars))
                 break
         else:
+            var_types = []
+            for var in vars:
+                try:
+                    var_types.append(var.type)
+                except AttributeError:
+                    var_types.append(var.__class__.__name__)
             raise NotImplementedError("Operator `{}` not implemented for vars `{}` and result `{}`".format(operator,
-                                                                                                           [var.type for var in vars[:-1]],
-                                                                                                           vars[-1].type))
+                                                                                                           var_types[:-1],
+                                                                                                           var_types[-1]))
 
         return rtn
 
