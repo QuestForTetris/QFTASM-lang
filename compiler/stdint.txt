@@ -8,22 +8,22 @@ operator -(int a) -> int
     return __SUB__(0, a)
 
 operator (int a >= int b) -> bool
-    int rtn = 1
+    bool rtn = 1
     rtn = __MLZ__(a-b, 0)
     return rtn
 
 operator (int a <= int b) -> bool
-    int rtn = 1
+    bool rtn = 1
     rtn = __MLZ__(b-a, 0)
     return rtn
 
 operator (int a > int b) -> bool
-    int rtn = 0
+    bool rtn = 0
     rtn = __MLZ__(b-a, 1)
     return rtn
 
 operator (int a < int b) -> bool
-    int rtn = 0
+    bool rtn = 0
     rtn = __MLZ__(a-b, 1)
     return rtn
 
