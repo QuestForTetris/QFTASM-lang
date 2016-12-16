@@ -45,7 +45,13 @@ operator (int a ^ int b) -> int
 operator (int a & int b) -> int
     return __AND__(a, b)
 
+operator (bool a && bool b) -> int
+    return __AND__(a, b)
+
 operator (int a | int b) -> int
+    return __OR__(a, b)
+
+operator (bool a || bool b) -> int
     return __OR__(a, b)
 
 operator (int a == int b) -> int
