@@ -233,6 +233,8 @@ def tokenise(inp):
         elif not purge_comments and tokenize.tok_name[token.exact_type] == "COMMENT" and token.string.startswith("#include"):
             with open(token.string[9:] + ".txt", "rb") as include_file:
                 rtn.extend(tokenise(include_file)[:-1])
+        elif tokenize.tok_name[token.exact_type] == "COMMENT":
+            pass
         else:
             purge_comments = True
             rtn.append(token)
