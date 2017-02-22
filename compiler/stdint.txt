@@ -57,8 +57,10 @@ operator (bool a || bool b) -> int
 operator (int a == int b) -> int
     return not __XOR__(a, b)
 
-operator (int a != int b) -> int
-    return __XOR__(a, b)
+operator (int a != int b) -> bool
+    bool rtn = 0
+    rtn = __XOR__(a, b)
+    return rtn
 
 operator (int a << int b) -> int
     return __SL__(a, b)
