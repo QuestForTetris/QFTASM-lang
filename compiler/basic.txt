@@ -1,5 +1,5 @@
 #include stdint
 
 sub main
-    int n = 4
-    n <<= 2
+    if 3!=1
+      int b = 2
