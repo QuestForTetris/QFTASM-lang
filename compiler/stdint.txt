@@ -39,26 +39,35 @@ operator not(bool a) -> bool
     bool rtn = __XOR__(a, 1)
     return rtn
 
+operator bool(int a) -> bool
+    bool rtn = __MNZ__(a, 1)
+    return rtn
+
+operator int(bool a) -> int
+    return a
+
 operator (int a ^ int b) -> int
     return __XOR__(a, b)
 
 operator (int a & int b) -> int
     return __AND__(a, b)
 
-operator (bool a && bool b) -> int
+operator (bool a && bool b) -> bool
     return __AND__(a, b)
 
 operator (int a | int b) -> int
     return __OR__(a, b)
 
-operator (bool a || bool b) -> int
+operator (bool a || bool b) -> bool
     return __OR__(a, b)
 
-operator (int a == int b) -> int
-    return not __XOR__(a, b)
+operator (int a == int b) -> bool
+    bool rtn = not (a != b)
+    return rtn
 
-operator (int a != int b) -> int
-    return __XOR__(a, b)
+operator (int a != int b) -> bool
+    bool rtn = __XOR__(a, b)
+    return rtn
 
 operator (int a << int b) -> int
     return __SL__(a, b)

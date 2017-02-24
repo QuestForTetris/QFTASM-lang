@@ -334,6 +334,12 @@
         <block name="not">
             <token exact_type="NAME" string="not"/>
         </block>
+        <block name="int">
+            <token exact_type="NAME" string="int"/>
+        </block>
+        <block name="bool">
+            <token exact_type="NAME" string="bool"/>
+        </block>
     </define>
     <define name="generic_value">
         <block name="single">

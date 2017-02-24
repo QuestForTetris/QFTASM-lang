@@ -17,7 +17,7 @@ class GlobalLocalStoreHelper:
         self._local_store = local_store
         self._inlines = inlines
 
-    def get_var(self, variable: GrammarTree):
+    def get_var(self, variable: GrammarTree) -> Variable:
         assert variable.name == "generic_var"
         if variable in self._global_store:
             return self._global_store[variable]
@@ -30,7 +30,7 @@ class GlobalLocalStoreHelper:
             return self._global_store.add_var(type_var)
         return self._local_store.add_var(type_var)
 
-    def parse_generic_value(self, tree):
+    def parse_generic_value(self, tree: GrammarTree):
         assert tree.name == "generic_value"
         if tree["_block_name"] == "var_literal":
             return self.parse_var_literal(tree["var_literal"])
@@ -53,7 +53,7 @@ class GlobalLocalStoreHelper:
         assert False, "Failed to assign var_literal"
 
     @staticmethod
-    def free_scratch(scratch):
+    def free_scratch(scratch: Variable):
         if isinstance(scratch, ScratchVariable):
             scratch.free()
 
@@ -79,6 +79,7 @@ class GlobalLocalStoreHelper:
                     vars[-1].type = inline.rtn_type
                 if rtn_type is not None:
                     vars[-1].type = rtn_type
+                #print(operator, vars, inline.rtn_type, rtn_type)
                 for var, cmp_var in zip(vars, inline.args+[inline.rtn_type]):
                     try:
                         var_type = var.type
