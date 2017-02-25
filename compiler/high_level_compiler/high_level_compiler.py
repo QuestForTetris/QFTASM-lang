@@ -272,7 +272,6 @@ class InlineInterpreter:
         rtn = []
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
-        print(rtn)
         return rtn
 
 
@@ -310,7 +309,8 @@ class AssignInterpreter(GlobalLocalStoreHelper):
         rtn, scratch = self.collect_value(self.value)
         if not rtn:
             rtn.append(("assign", self.var, self.value))
-        rtn = self.replace_variables(rtn, [scratch], [self.var])
+        if scratch is not self.value:
+            rtn = self.replace_variables(rtn, [scratch], [self.var])
         self.free_scratch(scratch)
         return rtn
 
