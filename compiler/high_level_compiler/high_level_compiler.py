@@ -114,7 +114,6 @@ class GlobalLocalStoreHelper:
             raise NotImplementedError("Operator `{}` not implemented for vars `{}` and result `{}`".format(operator,
                                                                                                            var_types[:-1],
                                                                                                            var_types[-1]))
-
         return rtn
 
     @staticmethod
@@ -495,7 +494,7 @@ class SingleInterpreter(GlobalLocalStoreHelper):
         else:
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
-        rtn.extend(self.inline_operator([self.operator, scratch, self.result]))
+        rtn.extend(self.inline_operator([self.operator, scratch, self.result], retype=True))
         return rtn
 
 

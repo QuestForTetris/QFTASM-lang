@@ -40,7 +40,8 @@ operator not(bool a) -> bool
     return rtn
 
 operator bool(int a) -> bool
-    bool rtn = __MNZ__(a, 1)
+    bool rtn = 0
+    rtn = __MNZ__(a, 1)
     return rtn
 
 operator int(bool a) -> int
@@ -66,7 +67,8 @@ operator (int a == int b) -> bool
     return rtn
 
 operator (int a != int b) -> bool
-    bool rtn = __XOR__(a, b)
+    int scratch = __XOR__(a, b)
+    bool rtn = bool(scratch)
     return rtn
 
 operator (int a << int b) -> int
