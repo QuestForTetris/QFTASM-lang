@@ -494,7 +494,7 @@ class SingleInterpreter(GlobalLocalStoreHelper):
         else:
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
-        rtn.extend(self.inline_operator([self.operator, scratch, self.result], retype=True))
+        rtn.extend(self.inline_operator([self.operator, scratch, self.result]))
         return rtn
 
 
