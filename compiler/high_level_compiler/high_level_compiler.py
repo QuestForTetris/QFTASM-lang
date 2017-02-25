@@ -69,15 +69,16 @@ class GlobalLocalStoreHelper:
             return value.compile(), value.result
         raise SyntaxError("Unable to collect value from %s" % value.__class__.__name__)
 
-    def inline_operator(self, instruction, retype=False, rtn_type=None):
+    def inline_operator(self, instruction, *, rtn_type=None):
         operator, *vars = instruction
         rtn = []
         for inline in self._inlines:
             if inline.operator == operator:
                 skip = False
-                if retype:
+                if isinstance(vars[-1], ScratchVariable):
                     vars[-1].type = inline.rtn_type
                 if rtn_type is not None:
+                    assert isinstance(vars[-1], ScratchVariable)
                     vars[-1].type = rtn_type
                 #print(operator, vars, inline.rtn_type, rtn_type)
                 for var, cmp_var in zip(vars, inline.args+[inline.rtn_type]):
@@ -95,6 +96,8 @@ class GlobalLocalStoreHelper:
                     continue
                 # Now replace the variables and replace it
                 *compiled, (rtn_stmt, result) = inline.compile()
+                if isinstance(result, ScratchVariable):
+                    result.type = inline.rtn_type
                 assert rtn_stmt == "return", "operator's must have a return as last statement"
                 assert result.type == inline.rtn_type, "Operator `{}{} -> {}` returned `{}`".format(operator, tuple(var.type for var in inline.args), inline.rtn_type, result.type)
                 if inline.unsafe:
@@ -269,6 +272,7 @@ class InlineInterpreter:
         rtn = []
         for stmt in self.stmts:
             rtn.extend(stmt.stmt.compile())
+        print(rtn)
         return rtn
 
 
@@ -474,7 +478,7 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch_1)
             self.free_scratch(scratch_2)
         rtn.extend(extend)
-        rtn.extend(self.inline_operator([self.operator, scratch_1, scratch_2, self.result], retype=True))
+        rtn.extend(self.inline_operator([self.operator, scratch_1, scratch_2, self.result]))
         return rtn
 
 
@@ -494,10 +498,7 @@ class SingleInterpreter(GlobalLocalStoreHelper):
         else:
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
-        try:
-            rtn.extend(self.inline_operator([self.operator, scratch, self.result]))
-        except NotImplementedError:
-            rtn.extend(self.inline_operator([self.operator, scratch, self.result], retype=True))
+        rtn.extend(self.inline_operator([self.operator, scratch, self.result]))
         return rtn
 
 
