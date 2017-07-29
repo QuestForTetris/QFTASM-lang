@@ -63,7 +63,8 @@ operator (bool a || bool b) -> bool
     return __OR__(a, b)
 
 operator (int a == int b) -> bool
-    bool rtn = not (a != b)
+    int scratch = __XOR__(a, b)
+    bool rtn = not scratch
     return rtn
 
 operator (int a != int b) -> bool
@@ -94,12 +95,12 @@ operator (int a / int b) -> int
 
 unsafe operator (int a * int b) -> int
     int rtn = 0
-    for(int i = 0; i < b; i+=1)
-      rtn += a
+    for (int i = 0; i < b; i+=1)
+        rtn += a
     return rtn
 
 unsafe operator (int a ** int b) -> int
     int rtn = 1
-    for(int i = 0; i < b; i+=1)
-      rtn *= a
+    for (int i = 0; i < b; i+=1)
+        rtn *= a
     return rtn
