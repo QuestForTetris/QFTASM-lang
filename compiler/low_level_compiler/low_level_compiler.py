@@ -27,7 +27,7 @@ class FileInterpreter:
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
         #print("\n".join(compiled))
         # make the compiler work with the new version of QFTASM
-        print("0. MLZ 0 0 0")
+        print("0. MLZ 0 0 0;")
 
         compiled = self.add_jumps(compiled)
         print("\n".join(compiled))
@@ -38,7 +38,8 @@ class FileInterpreter:
             return ["#Start {}".format(name)]
         elif name == "main":
             return ["#End {}".format(name),
-                    "MLZ -1 -1 0"]
+                    "MLZ -1 -2 0",
+                    "MLZ 0 0 0"]
         else:
             return ["#End {}".format(name)]
 
@@ -46,13 +47,13 @@ class FileInterpreter:
         if sub_name in FileInterpreter.opcodes:
             return ["{} {} {} {}".format(sub_name[2:-2], *map(self.parse_variable, args), self.parse_result(result))]
         rtn = []
+        variables = self.global_store.filter_subroutine(self.current_sub)
+        for var in variables:
+            rtn.extend(self.push_stack(self.parse_variable(var)))
         for param, arg in zip(args, self.global_store.get_ordered_params(sub_name)):
             print(param, arg.offset)
             rtn.append("MLZ -1 {} {}".format(self.parse_variable(param),
                                              self.parse_result(arg)))
-        variables = self.global_store.filter_subroutine(self.current_sub)
-        for var in variables:
-            rtn.extend(self.push_stack(self.parse_variable(var)))
         uuid = next(id_gen)
         rtn.extend(self.push_stack("{}", "EndCall {}_{}".format(sub_name, uuid)))
         rtn.append("MLZ -1 {} 0; Start {}".format("{}", sub_name))
@@ -113,7 +114,6 @@ class FileInterpreter:
                 "ADD {} 1 {}".format(self.parse_variable(self.global_store["<stack>"]),
                                      self.parse_result(self.global_store["<stack>"]))
                 ]
-
 
     def add_jumps(self, compiled):
         for i, instruction in enumerate(compiled):
