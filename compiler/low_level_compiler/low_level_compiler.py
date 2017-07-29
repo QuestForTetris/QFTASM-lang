@@ -26,6 +26,9 @@ class FileInterpreter:
             assert instruction[0] in self.compilers
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
         #print("\n".join(compiled))
+        # make the compiler work with the new version of QFTASM
+        print("0. MLZ 0 0 0")
+
         compiled = self.add_jumps(compiled)
         print("\n".join(compiled))
 
