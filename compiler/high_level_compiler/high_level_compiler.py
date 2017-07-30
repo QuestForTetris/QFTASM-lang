@@ -261,9 +261,8 @@ class InlineInterpreter:
         self.unsafe = tree["_unsafe"]
         stmts = tree["stmts"]["stmts"]
         self.rtn_type = tree["rtn_type"]
-        self.stmts = []
-        for stmt in stmts:
-            self.stmts.append(StmtInterpreter(self.global_store, self.local_store, inlines, stmt))
+        self.inlines = inlines
+        self.stmts = stmts
 
     def __str__(self):
         return "operator({}, {}, {})".format(self.operator, self.args, self.rtn_type)
@@ -271,7 +270,7 @@ class InlineInterpreter:
     def compile(self):
         rtn = []
         for stmt in self.stmts:
-            rtn.extend(stmt.stmt.compile())
+            rtn.extend(StmtInterpreter(self.global_store, self.local_store, self.inlines, stmt).stmt.compile())
         return rtn
 
 
