@@ -40,16 +40,18 @@ class GlobalLocalStoreHelper:
             return SubCallInterpreter(self._global_store, self._local_store, self._inlines, tree["sub_call"])
         elif tree["_block_name"] == "single":
             return SingleInterpreter(self._global_store, self._local_store, self._inlines, tree)
-        assert False, "Failed to assign generic_value %s"%tree["_block_name"]
+        assert False, "Failed to assign generic_value {}".format(tree["_block_name"])
 
     def parse_var_literal(self, tree: GrammarTree):
         assert tree.name == "var_literal"
         if tree["_block_name"] == "brackets":
             return self.parse_generic_value(tree["generic_value"])
-        if tree["_block_name"] == "literal":
+        elif tree["_block_name"] == "literal":
             return LiteralInterpreter(tree["generic_literal"])
-        if tree["_block_name"] == "var":
+        elif tree["_block_name"] == "var":
             return self.get_var(tree["generic_var"])
+        elif tree["_block_name_2"] == "array":
+            return ArrayInterpreter(self._global_store, self._local_store, self._inlines, tree)
         assert False, "Failed to assign var_literal"
 
     @staticmethod
@@ -406,7 +408,7 @@ class WhileInterpreter(GlobalLocalStoreHelper):
             self.stmts.append(StmtInterpreter(self._global_store, self._local_store, inlines, stmt))
 
     def __repr__(self):
-        pre = "while %s do\n"%self.condition
+        pre = "while {} do\n".format(self.condition)
         rtn = "\n".join(str(stmt) for stmt in self.stmts).splitlines()
         rtn = "\t"+"\n\t".join(rtn)
         return pre+rtn
@@ -535,6 +537,23 @@ class SubCallInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch)
         return rtn
 
+
+class ArrayInterpreter(GlobalLocalStoreHelper):
+    def __init__(self, global_store: VariableStore, local_store: VariableStore, inlines, tree: GrammarTree):
+        super().__init__(global_store, local_store, inlines)
+        assert tree["_block_name_2"] == "array"
+        self.params = [self.parse_generic_value(tree["generic_value"])]
+        self.add_params(tree["arg_list"])
+        print(self.params)
+
+    def __repr__(self):
+        return str(self.params)
+
+    def add_params(self, tree: GrammarTree):
+        if "generic_value" in tree:
+            self.params.append(self.parse_generic_value(tree["generic_value"]))
+            if tree["_further_params"]:
+                self.add_params(tree["arg_list"])
 
 class DummyInterpreter:
     def __init__(self, global_store: VariableStore, inlines, tree: GrammarTree):

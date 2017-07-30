@@ -370,6 +370,14 @@
         <block name="literal">
             <stmt name="generic_literal"/>
         </block>
+        <block name="array">
+            <token exact_type="LSQB"/>
+            <stmt name="generic_value"/>
+            <optional name="further_params">
+                <stmt name="arg_list"/>
+            </optional>
+            <token exact_type="RSQB"/>
+        </block>
     </define>
     <define name="generic_var">
         <block name="type_var">
@@ -380,6 +388,16 @@
         </block>
     </define>
     <define name="type_var">
+        <block name="array_type">
+            <optional name="global" var="global">
+                <token exact_type="NAME" string="global"/>
+            </optional>
+            <token exact_type="NAME" var="type"/>
+            <token exact_type="NAME" var="name"/>
+            <token exact_type="LSQB"/>
+            <stmt name="generic_value"/>
+            <token exact_type="RSQB"/>
+        </block>
         <block name="type">
             <optional name="global" var="global">
                 <token exact_type="NAME" string="global"/>
