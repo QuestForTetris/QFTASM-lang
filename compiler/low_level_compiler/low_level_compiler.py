@@ -216,11 +216,21 @@ class FileInterpreter:
                 jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
                 # Replace the instruction with one with the jump target embedded
                 compiled[i] = instruction.format(jump_offset)
-        # Remove all labels
-        compiled = [inst for inst in compiled if not inst.startswith("#")]
+        # compiled = [inst for inst in compiled if not inst.startswith("#")]
+        # Add labels back
+        temp = []
+        for inst in compiled:
+            if inst.startswith("#"):
+                temp[len(temp)-1] += [inst[1:]]
+            else:
+                temp += [[inst]]
+        compiled = temp
         # Add line numbers
         for i, instruction in enumerate(compiled):
-            compiled[i] = "{}. {};".format(i+1, compiled[i])
+            if len(instruction) == 1:
+                compiled[i] = "{}. {};".format(i+1, compiled[i][0])
+            else:
+                compiled[i] = "{}. {}; {}".format(i+1, compiled[i][0], compiled[i][1])
         return compiled
 
     def parse_variable(self, variable: Variable) -> str:
