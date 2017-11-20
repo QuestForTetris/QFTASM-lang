@@ -1,3 +1,5 @@
+import sys
+
 class Interpreter:
     def __init__(self, inp: str):
         self.opcodes = {"MNZ": self.mov_not_zero,
@@ -68,9 +70,12 @@ class Interpreter:
 
     def run(self):
         len_tokens = len(self.tokens)
+        # the operation in queue
+        q_opcode, q_operands = self.tokens[self.ram._contents[0]]
         while 1:
-            opcode, operands = self.tokens[self.ram._contents[0]]
+            opcode, operands = q_opcode, q_operands
             self.ram._contents[0] += 1
+            q_opcode, q_operands = self.tokens[self.ram._contents[0]]
             opcode(*operands)
             #print(self.ram)
             if self.ram._contents[0] > len_tokens:
@@ -103,8 +108,8 @@ class RAM():
 
     def __setitem__(self, key, value):
         self._contents[key] = self.fix_value(value)
-        if key == 5:
-            print("Set 5 to", self._contents[key])
+        if key == 1:
+            print("Set 1 to", self._contents[key])
             if self._contents[key] == 211:
                 exit()
         if value == 0:
@@ -140,6 +145,6 @@ class RamLocation():
         return value
 
 if __name__ == "__main__":
-    with open("output.qftasm") as assembly_file:
+    with open(sys.argv[1]) as assembly_file:
         interpreter = Interpreter(assembly_file.read())
         interpreter.run()

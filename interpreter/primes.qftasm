@@ -6,14 +6,14 @@
 5. MLZ -1 A3 5; beginDoWhile2_repeated_subtraction
 6. SUB A5 A4 5;
 7. SUB 0 A5 2;
-8. MLZ A2 6 0;
+8. MLZ A2 5 0;
 9. MLZ 0 0 0; endDoWhile2_repeated_subtraction
-10. MLZ A5 4 0;
+10. MLZ A5 3 0;
 11. MLZ 0 0 0; endDoWhile1_trials
 12. SUB A4 A3 2;
-13. MNZ A2 16 0; beginIf3_prime_found
+13. MNZ A2 15 0; beginIf3_prime_found
 14. MLZ 0 0 0;
 15. MLZ -1 A3 1; endIf3_prime_found
 16. ADD A3 2 3;
-17. MLZ -1 4 0;
+17. MLZ -1 3 0;
 18. MLZ -1 1 4; endDoWhile0_infinite_loop
