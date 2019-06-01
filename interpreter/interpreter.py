@@ -23,63 +23,76 @@ class Interpreter:
         # Lines must have a semicolon
         if not semicolon:
             raise SyntaxError("%s: No semicolon ending"%(line))
-        line_no, opcode_id, *operands, dest = code.split()
+        line_no, opcode_id, *operands = code.split()
         line_no = int(line_no.rstrip("."))
         opcode = self.opcodes[opcode_id]
-        dest = int(dest)
         operands = list(map(self.parse_operand, operands))
-        return opcode, [*operands, dest]
+        return opcode, operands
 
     def parse_operand(self, operand: str) -> "RamLocation":
         return RamLocation(self.ram, operand)
 
-    def mov_not_zero(self, test: "RamLocation", value: "RamLocation", dest: int):
-        if test() != 0:
-            self.ram[dest] = value()
+    def mov_not_zero(self, test: int, value: int, dest: int):
+        if test != 0:
+            self.ram[dest] = value
 
-    def mov_less_zero(self, test: "RamLocation", value: "RamLocation", dest: int):
-        if not self.ram.is_non_neg(test()):
-            self.ram[dest] = value()
+    def mov_less_zero(self, test: int, value: int, dest: int):
+        if not self.ram.is_non_neg(test):
+            self.ram[dest] = value
 
-    def add(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() + val2()
+    def add(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 + val2
 
-    def sub(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() - val2()
+    def sub(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 - val2
 
-    def _and(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() & val2()
+    def _and(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 & val2
 
-    def _or(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() | val2()
+    def _or(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 | val2
 
-    def xor(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() ^ val2()
+    def xor(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 ^ val2
 
-    def and_not(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-            self.ram[dest] = val1() & ~val2()
+    def and_not(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 & ~val2
 
-    def shift_left(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() << val2()
+    def shift_left(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 << val2
 
-    def shift_right_logic(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = self.ram.unfix_value(val1()) >> val2()
+    def shift_right_logic(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = self.ram.unfix_value(val1) >> val2
 
-    def shift_right_arith(self, val1: "RamLocation", val2: "RamLocation", dest: int):
-        self.ram[dest] = val1() >> val2()
+    def shift_right_arith(self, val1: int, val2: int, dest: int):
+        self.ram[dest] = val1 >> val2
 
     def run(self):
         len_tokens = len(self.tokens)
         # the operation in queue
-        q_opcode, q_operands = self.tokens[self.ram._contents[0]]
+
+        opcode = None
+
         while 1:
-            opcode, operands = q_opcode, q_operands
-            self.ram._contents[0] += 1
-            q_opcode, q_operands = self.tokens[self.ram._contents[0]]
-            opcode(*operands)
-            #print(self.ram)
-            if self.ram._contents[0] > len_tokens:
+            if self.ram._contents[0] >= len_tokens:
+                qopcode = None
+            else:
+                qopcode, qoperands = self.tokens[self.ram._contents[0]]
+
+            # starting condition
+            if opcode is not None:
+                opcode(*operands)
+            print(self.ram)
+
+            # ending condition
+            if qopcode is None:
                 break
+
+            # read into memory
+            qoperands = list(map(RamLocation.__call__, qoperands))
+            opcode, operands = qopcode, qoperands
+            self.ram._contents[0]+=1
+
         print("Done!")
 
 
