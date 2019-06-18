@@ -82,7 +82,7 @@ class Interpreter:
             # starting condition
             if opcode is not None:
                 opcode(*operands)
-            print(self.ram)
+            #print(self.ram)
 
             # ending condition
             if qopcode is None:
@@ -114,6 +114,10 @@ class RAM():
         return "\n".join(rtn)
 
     def __getitem__(self, item):
+        if isinstance(item, slice):
+            item = tuple(range(item.stop)[item])
+        if isinstance(item, tuple):
+            return list(self[a] for a in item)
         try:
             return self._contents[item]
         except KeyError:
