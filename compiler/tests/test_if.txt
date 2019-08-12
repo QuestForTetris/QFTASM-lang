@@ -1,0 +1,6 @@
+#include stdint
+
+sub main
+    int a = 7
+    if a == 7
+        a = 5

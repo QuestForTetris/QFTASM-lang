@@ -197,7 +197,7 @@ class FileInterpreter:
                                                         is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
-        print(self.global_store)
+        #print(self.global_store)
         return rtn
 
 

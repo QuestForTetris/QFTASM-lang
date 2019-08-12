@@ -126,7 +126,7 @@ class RAM():
     def __setitem__(self, key, value):
         self._contents[key] = self.fix_value(value)
         if key == 1:
-            print("Set 1 to", self._contents[key])
+            #print("Set 1 to", self._contents[key])
             if self._contents[key] == 211:
                 exit()
         if value == 0:

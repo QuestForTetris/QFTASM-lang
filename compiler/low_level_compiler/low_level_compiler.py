@@ -29,19 +29,20 @@ class FileInterpreter:
         compiled = ["MLZ -1 {} {}".format(self.global_store["<stack>"].offset+1,
                                           self.parse_result(self.global_store["<stack>"]))]
         for instruction in instruction_list:
-            print(instruction)
+            #print(instruction)
             # Check the output of the high level compiler can be compiled
             assert instruction[0] in self.compilers, "Cannot compile high level instruction {}".format(instruction)
             # Add the bytecode to the list
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
         #print("\n".join(compiled))
         # Make the compiler work with the new version of QFTASM
-        print("0. MLZ 0 0 0;")
+        #print("0. MLZ 0 0 0;")
 
         # Strip out the jump label information
         compiled = self.add_jumps(compiled)
+        self.compiled = compiled
         # Output the complete QFTASM code
-        print("\n".join(compiled))
+        #print("\n".join(compiled))
 
     def sub_compiler(self, status: str, name: str):
         """
@@ -83,7 +84,7 @@ class FileInterpreter:
             rtn.extend(self.push_stack(self.parse_variable(var)))
         # Put all the arguments to the called subroutine into their place in RAM
         for param, arg in zip(args, self.global_store.get_ordered_params(sub_name)):
-            print(param, arg.offset)
+            #print(param, arg.offset)
             rtn.append("MLZ -1 {} {}".format(self.parse_variable(param),
                                              self.parse_result(arg)))
         uuid = next(id_gen)

@@ -1,7 +1,7 @@
 import unittest
 import sys
-sys.path.insert(0, '..')
-from interpreter.interpreter import Interpreter
+sys.path.insert(1,'..')
+from interpreter import Interpreter
 
 class TestInterpreter(unittest.TestCase):
     def setUp(self):
