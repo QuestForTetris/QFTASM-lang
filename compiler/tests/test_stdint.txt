@@ -1,0 +1,9 @@
+#include stdint
+
+sub main
+        int a = 7 + 3
+        a += 21
+        int b = 6
+        int c = -23456
+        b -= 380
+        c -= 9876

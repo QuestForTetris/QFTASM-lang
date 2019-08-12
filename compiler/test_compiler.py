@@ -29,6 +29,10 @@ class TestCompiler(unittest.TestCase):
         self.run_prg("tests/test_assign_multi.txt")
         self.assertEqual(self.get_ram(["main_a","main_b","main_c"]), [7,3,1337])
 
+    def test_stdint(self):
+        self.run_prg("tests/test_stdint.txt")
+        self.assertEqual(self.get_ram(["main_a","main_b","main_c"]), [31,65162,32204])
+
     def test_if(self):
         self.run_prg("tests/test_if.txt")
         self.assertEqual(self.get_ram(["main_a"]), [5])

@@ -1,4 +1,5 @@
 basic.txt
 __pycache__/
+*.pyc
 test.txt
 *.spyc

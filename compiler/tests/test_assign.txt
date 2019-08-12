@@ -1,4 +1,2 @@
-#include stdint
-
 sub main
         int a = 7
