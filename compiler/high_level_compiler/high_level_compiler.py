@@ -76,7 +76,7 @@ class GlobalLocalStoreHelper:
         rtn = []
         for inline in self._inlines:
             # check if same operator and same arity
-            if inline.operator == operator and len(inline.args) == len(vars[:-1]):
+            if inline.operator == operator:
                 skip = False
                 if isinstance(vars[-1], ScratchVariable):
                     vars[-1].type = inline.rtn_type
@@ -84,7 +84,7 @@ class GlobalLocalStoreHelper:
                     assert isinstance(vars[-1], ScratchVariable)
                     vars[-1].type = rtn_type
                 #print(operator, vars, inline.rtn_type, rtn_type)
-                for var, cmp_var in zip(vars, inline.args+[inline.rtn_type]):
+                for var, cmp_var in itertools.zip_longest(vars, inline.args+[inline.rtn_type]):
                     try:
                         var_type = var.type
                     except AttributeError:
