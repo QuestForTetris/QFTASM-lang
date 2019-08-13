@@ -35,11 +35,11 @@ class FileInterpreter:
             # Add the bytecode to the list
             compiled.extend(self.compilers[instruction[0]](*instruction[1:]))
         #print("\n".join(compiled))
-        # Make the compiler work with the new version of QFTASM
-        #print("0. MLZ 0 0 0;")
 
         # Strip out the jump label information
         compiled = self.add_jumps(compiled)
+        # Make the compiler work with the new version of QFTASM
+        #self.compiled = ["0. MNZ 0 0 0;"]+compiled
         self.compiled = compiled
         # Output the complete QFTASM code
         #print("\n".join(compiled))
@@ -216,7 +216,7 @@ class FileInterpreter:
                 jump_offset = compiled.index("#"+jump)
                 jump_offset -= len([inst for inst in compiled[:jump_offset] if inst.startswith("#")])
                 # Replace the instruction with one with the jump target embedded
-                compiled[i] = instruction.format(jump_offset)
+                compiled[i] = instruction.format(jump_offset-1)
         # compiled = [inst for inst in compiled if not inst.startswith("#")]
         # Add labels back
         temp = []
@@ -229,9 +229,9 @@ class FileInterpreter:
         # Add line numbers
         for i, instruction in enumerate(compiled):
             if len(instruction) == 1:
-                compiled[i] = "{}. {};".format(i+1, compiled[i][0])
+                compiled[i] = "{}. {};".format(i, compiled[i][0])
             else:
-                compiled[i] = "{}. {}; {}".format(i+1, compiled[i][0], compiled[i][1])
+                compiled[i] = "{}. {}; {}".format(i, compiled[i][0], compiled[i][1])
         return compiled
 
     def parse_variable(self, variable: Variable) -> str:
