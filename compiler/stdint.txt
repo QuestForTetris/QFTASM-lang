@@ -79,20 +79,20 @@ operator (int a >> int b) -> int
     return __SRL__(a, b)
 
 unsafe operator (int a % int b) -> int
-    int res = a
+    int rtn = a
     int t = 0
     int n = b
     int br = 1
     while(br != 0) do
-        if(b > res)
+        if(b > rtn)
             br = 0
-        t = res >> 1
+        t = rtn >> 1
         n = b
         while (n < t) do
             n <<= 1
         if(br != 0)
-            res -= n
-    return res
+            rtn -= n
+    return rtn
 
 operator (int a / int b) -> int
     int rtn = 0-1
@@ -104,8 +104,13 @@ operator (int a / int b) -> int
 
 unsafe operator (int a * int b) -> int
     int rtn = 0
-    for (int i = 0; i < b; i+=1)
-        rtn += a
+    int x = a
+    int y = b
+    while (x > 0) do
+        if (x & 1)
+            rtn += y
+        y <<= 1
+        x >>= 1
     return rtn
 
 unsafe operator (int a ** int b) -> int

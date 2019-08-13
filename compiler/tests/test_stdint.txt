@@ -7,3 +7,10 @@ sub main
         int c = -23456
         b -= 380
         c -= 9876
+        bool d = c > a
+        bool e = b >= c
+        bool f = a < b
+        bool g = b <= b
+        int h = ~a
+        bool i = not e
+        bool j = not not not a

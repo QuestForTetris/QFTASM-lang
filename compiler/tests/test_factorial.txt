@@ -1,0 +1,11 @@
+#include stdint
+
+sub factorial (int num) -> int
+		int result = 1
+		for (int i = 1; i <= num; i += 1)
+			result *= i
+		
+		return result
+
+sub main
+		int a = factorial(5)

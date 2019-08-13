@@ -75,7 +75,6 @@ class GlobalLocalStoreHelper:
         operator, *vars = instruction
         rtn = []
         for inline in self._inlines:
-            # check if same operator and same arity
             if inline.operator == operator:
                 skip = False
                 if isinstance(vars[-1], ScratchVariable):
