@@ -26,6 +26,9 @@ class GlobalLocalStoreHelper:
         assert "type_var" in variable, "Variable `{}` has no type at definition".format(VariableStore.get_name(variable))
         type_var = variable["type_var"]
         is_global = type_var["_global"]
+        is_array = type_var["_block_name"] == "array_type"
+        if is_array:
+            type_var["size"] = self.collect_value(self.parse_generic_value(type_var["generic_value"]))
         if is_global:
             return self._global_store.add_var(type_var)
         return self._local_store.add_var(type_var)
@@ -65,6 +68,8 @@ class GlobalLocalStoreHelper:
             return [], value.val
         if isinstance(value, Variable):
             return [], value
+        if isinstance(value, ArrayInterpreter):
+            return [], value.val
         if isinstance(value, (ArithmeticInterpreter, SingleInterpreter)):
             return value.compile(), value.result
         if isinstance(value, SubCallInterpreter):
@@ -197,7 +202,7 @@ class FileInterpreter:
                                                         is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
-        #print(self.global_store)
+        print(self.global_store)
         return rtn
 
 
@@ -542,16 +547,16 @@ class ArrayInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, inlines, tree: GrammarTree):
         super().__init__(global_store, local_store, inlines)
         assert tree["_block_name_2"] == "array"
-        self.params = [self.parse_generic_value(tree["generic_value"])]
+        self.val = [self.parse_generic_value(tree["generic_value"])]
         self.add_params(tree["arg_list"])
-        print(self.params)
+        #print(self.params)
 
     def __repr__(self):
-        return str(self.params)
+        return str(self.val)
 
     def add_params(self, tree: GrammarTree):
         if "generic_value" in tree:
-            self.params.append(self.parse_generic_value(tree["generic_value"]))
+            self.val.append(self.parse_generic_value(tree["generic_value"]))
             if tree["_further_params"]:
                 self.add_params(tree["arg_list"])
 

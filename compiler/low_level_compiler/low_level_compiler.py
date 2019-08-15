@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from high_level_compiler.variables import VariableStore, Variable, id_gen
+from high_level_compiler.high_level_compiler import ArrayInterpreter
 
 
 class FileInterpreter:
@@ -126,6 +127,8 @@ class FileInterpreter:
         :param value:
         :return:
         """
+        if variable.is_array:
+            return ["MLZ -1 {} {}".format(val, res) for val, res in zip(self.parse_variable(value), self.parse_result(variable))]
         return ["MLZ -1 {} {}".format(self.parse_variable(value),
                                       self.parse_result(variable))]
 
@@ -242,6 +245,8 @@ class FileInterpreter:
         :return:
         """
         if not isinstance(variable, Variable):
+            if isinstance(variable, ArrayInterpreter):
+                return [self.parse_variable(var)for var in variable.val]
             return str(variable)
         pointer = "AB"[variable.is_pointer]
         return pointer+str(variable.offset)
@@ -253,6 +258,8 @@ class FileInterpreter:
         :param variable:
         :return:
         """
+        if variable.is_array:
+            return [str(i+variable.offset)for i in range(variable.size)]
         pointer = "A"*variable.is_pointer
         return pointer+str(variable.offset)
 

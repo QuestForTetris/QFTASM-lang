@@ -33,7 +33,8 @@ class VariableStore:
 
     def __repr__(self):
         try:
-            return repr(list(enumerate([0]+self.offsets)))
+            return repr([(0,0)]+[(var.offset, var)for var in self.offsets])
+            #return repr(list(enumerate([0]+self.offsets)))
         except AttributeError:
             return repr(list(enumerate([0]+self._vars)))
 
@@ -118,7 +119,11 @@ class Variable:
         self.sub = None
         self.is_pointer = var["_block_name"] == "pointer_type"
         self.is_global = var["_global"]
+        self.is_array = var["_block_name"] == "array_type"
         self.size = 1
+        if self.is_array:
+            assert isinstance(var["size"][1], int), "Array size cannot be variable"
+            self.size = var["size"][1]
         self.offset = None
         self.param_var = param_var
 
@@ -145,6 +150,7 @@ class ScratchVariable(Variable):
         self.name = "scratch_%s"%next(id_gen)
         self.is_pointer = False
         self.is_global = True
+        self.is_array = False
         self.size = 1
         self.being_used = True
 
@@ -159,10 +165,12 @@ class CustomVariable(Variable):
                  type: str = "int",
                  is_pointer: bool = False,
                  is_global: bool = False,
+                 is_array: bool = False,
                  size: int = 1):
         self.type = type
         self.name = name
         self.is_pointer = is_pointer
         self.is_global = is_global
+        self.is_array = is_array
         self.size = size
 
