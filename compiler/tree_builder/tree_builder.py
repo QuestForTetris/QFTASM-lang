@@ -234,7 +234,8 @@ def tokenise(inp):
             with open(token.string[9:] + ".txt", "rb") as include_file:
                 rtn.extend(tokenise(include_file)[:-1])
         elif tokenize.tok_name[token.exact_type] == "COMMENT":
-            pass
+            # TODO: hack, find a better fix
+            rtn.append(type(token)(tokenize.NEWLINE, token.string, token.start, token.end, token.line))
         else:
             purge_comments = True
             rtn.append(token)

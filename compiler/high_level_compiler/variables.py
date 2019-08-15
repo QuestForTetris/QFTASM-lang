@@ -136,8 +136,10 @@ class Variable:
             rtn.append("global ")
         if self.is_pointer:
             rtn.append("*")
-        rtn.append(self.type+" ")
-        rtn.append(self.name)
+        rtn.append(self.type)
+        if self.is_array:
+            rtn.append("["+str(self.size)+"]")
+        rtn.append(" "+self.name)
         return "".join(rtn)
 
     def set_offset(self, offset):

@@ -248,6 +248,8 @@ class FileInterpreter:
             if isinstance(variable, ArrayInterpreter):
                 return [self.parse_variable(var)for var in variable.val]
             return str(variable)
+        if variable.is_array:
+            return ["A"+str(i+variable.offset)for i in range(variable.size)]
         pointer = "AB"[variable.is_pointer]
         return pointer+str(variable.offset)
 

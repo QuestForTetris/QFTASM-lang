@@ -69,7 +69,8 @@ class GlobalLocalStoreHelper:
         if isinstance(value, Variable):
             return [], value
         if isinstance(value, ArrayInterpreter):
-            return [], value.val
+            return value.compile(), value.result
+            #return [], value.compile()
         if isinstance(value, (ArithmeticInterpreter, SingleInterpreter)):
             return value.compile(), value.result
         if isinstance(value, SubCallInterpreter):
@@ -313,6 +314,7 @@ class AssignInterpreter(GlobalLocalStoreHelper):
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
+        #print("assign",rtn, scratch)
         if not rtn:
             rtn.append(("assign", self.var, self.value))
         if scratch is not self.value:
@@ -333,7 +335,9 @@ class ModAssignInterpreter(GlobalLocalStoreHelper):
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
+        #print("mod assign", rtn, scratch)
         rtn.extend(self.inline_operator([self.operator[:-1], self.var, scratch, self.var]))
+        self.free_scratch(scratch)
         return rtn
 
 
@@ -471,6 +475,7 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
         return " ".join([str(self.value_1), self.operator, str(self.value_2)])
 
     def compile(self):
+        #print("arith",self.value_1,self.value_2)
         rtn, scratch_1 = self.collect_value(self.value_1)
         extend, scratch_2 = self.collect_value(self.value_2)
         if isinstance(scratch_1, ScratchVariable):
@@ -485,6 +490,7 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch_2)
         rtn.extend(extend)
         rtn.extend(self.inline_operator([self.operator, scratch_1, scratch_2, self.result]))
+        #print("arith",rtn,self.result)
         return rtn
 
 
@@ -559,6 +565,20 @@ class ArrayInterpreter(GlobalLocalStoreHelper):
             self.val.append(self.parse_generic_value(tree["generic_value"]))
             if tree["_further_params"]:
                 self.add_params(tree["arg_list"])
+
+    def compile(self):
+        # compiled, result_scratch
+        raw_rtn, self.result = zip(*map(self.collect_value,self.val))
+        for res in self.result:
+            if isinstance(res, ScratchVariable):
+                self.free_scratch(res)
+        rtn = []
+        for raw in raw_rtn:
+            rtn.extend(raw)
+        self.result = list(self.result)
+        #print(rtn, self.result)
+        return rtn
+        #return self.val
 
 class DummyInterpreter:
     def __init__(self, global_store: VariableStore, inlines, tree: GrammarTree):
