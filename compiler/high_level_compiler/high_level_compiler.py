@@ -43,6 +43,8 @@ class GlobalLocalStoreHelper:
             return SubCallInterpreter(self._global_store, self._local_store, self._inlines, tree["sub_call"])
         elif tree["_block_name"] == "single":
             return SingleInterpreter(self._global_store, self._local_store, self._inlines, tree)
+        elif tree["_block_name"] == "array_index":
+            return ArrayIndexInterpreter(self._global_store, self._local_store, self._inlines, tree)
         assert False, "Failed to assign generic_value {}".format(tree["_block_name"])
 
     def parse_var_literal(self, tree: GrammarTree):
@@ -71,6 +73,8 @@ class GlobalLocalStoreHelper:
         if isinstance(value, ArrayInterpreter):
             return value.compile(), value.result
             #return [], value.compile()
+        if isinstance(value, ArrayIndexInterpreter):
+            return value.compile(), value.result
         if isinstance(value, (ArithmeticInterpreter, SingleInterpreter)):
             return value.compile(), value.result
         if isinstance(value, SubCallInterpreter):
@@ -177,12 +181,12 @@ class FileInterpreter:
         for sub in self.subs:
             sub.local_store.finalise()
             for var in sub.local_store.offsets:
-                new = copy.deepcopy(var)
+                new = var
                 new.name = sub.name + "_" + new.name
                 new.sub = sub.name
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
-                rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
+                #rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
         for inline in self.inlines:
             for arg in inline.args:
                 inline.local_store.remove(arg)
@@ -190,12 +194,12 @@ class FileInterpreter:
                 inline.local_store.remove("rtn")
             inline.local_store.finalise()
             for var in inline.local_store.offsets:
-                new = copy.deepcopy(var)
+                new = var
                 new.name = "op({}:{})".format(inline.operator, new.name)
                 new.sub = "op({})".format(inline.operator)
                 if new.name not in self.global_store:
                     self.global_store.add_named(new)
-                rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
+                #rtn = GlobalLocalStoreHelper.replace_variables(rtn, [var], [new])
         self.global_store.add_subroutine(CustomVariable(name="<result>",
                                                         is_pointer=False,
                                                         is_global=True))
@@ -511,6 +515,27 @@ class SingleInterpreter(GlobalLocalStoreHelper):
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
         rtn.extend(self.inline_operator([self.operator, scratch, self.result]))
+        return rtn
+
+
+class ArrayIndexInterpreter(GlobalLocalStoreHelper):
+    def __init__(self, global_store: VariableStore, local_store: VariableStore, inlines, tree: GrammarTree):
+        super().__init__(global_store, local_store, inlines)
+        self.var = self.parse_var_literal(tree["var_literal"])
+        self.index = self.parse_generic_value(tree["generic_value"])
+        #print(self)
+
+    def __repr__(self):
+        return "%s[%s]" % (self.var, self.index)
+
+    def compile(self):
+        rtn, scratch = self.collect_value(self.index)
+        if isinstance(scratch, ScratchVariable):
+            self.result = scratch
+        else:
+            self.result = self._global_store.add_scratchpad()
+            self.free_scratch(scratch)
+        rtn.append(("array_index", self.var, scratch, self.result))
         return rtn
 
 

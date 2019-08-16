@@ -20,6 +20,7 @@ class FileInterpreter:
             "call_sub": self.call_sub_compiler,
             "return": self.return_compiler,
             "assign": self.assign_interpreter,
+            "array_index": self.array_index_interpreter,
             "if": self.if_interpreter,
             "while": self.while_interpreter,
         }
@@ -131,6 +132,19 @@ class FileInterpreter:
             return ["MLZ -1 {} {}".format(val, res) for val, res in zip(self.parse_variable(value), self.parse_result(variable))]
         return ["MLZ -1 {} {}".format(self.parse_variable(value),
                                       self.parse_result(variable))]
+
+    def array_index_interpreter(self, array, index, value):
+        """
+        Assign a value the corresponding array index
+
+        :param array:
+        :param index:
+        :param value:
+        :return:
+        """
+        # TODO: use pointer and parse_variable
+        return ["ADD {} {} {}".format(str(array.offset), self.parse_variable(index), self.parse_result(value)),
+                "MLZ -1 B{} {}".format(str(value.offset), self.parse_result(value))]
 
     def if_interpreter(self, status, if_id, condition):
         """

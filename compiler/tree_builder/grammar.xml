@@ -342,6 +342,12 @@
         </block>
     </define>
     <define name="generic_value">
+		<block name="array_index">
+			<stmt name="var_literal"/>
+            <token exact_type="LSQB"/>
+			<stmt name="generic_value"/>
+            <token exact_type="RSQB"/>
+		</block>
         <block name="single">
             <stmt name="single_op"/>
             <stmt name="generic_value"/>
