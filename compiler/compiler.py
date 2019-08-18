@@ -12,5 +12,13 @@ class Compiler:
                                                                   high_level_file_interpreter.global_store)
 
 if __name__ == "__main__":
+    #"""
     compiler = Compiler(sys.argv[1])
     print("\n".join(compiler.low_level_file_interpreter.compiled))
+    """
+    high_level_file_interpreter = HighLevelFileInterpreter(build_tree(sys.argv[1]))
+    compiled = high_level_file_interpreter.compile()
+    #for c in compiled:
+        #print(c)
+    print(compiled)
+    #"""

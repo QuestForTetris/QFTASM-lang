@@ -19,7 +19,17 @@ class TestCompiler(unittest.TestCase):
         self.ram = interpreter.ram
 
     def get_ram(self, variables):
-        return [self.ram[self.file_interpreter.global_store["main_"+variable].offset] for variable in variables]
+        rtn = []
+        for variable in variables:
+            var = self.file_interpreter.global_store["main_"+variable]
+            extra = None
+            if var.is_array:
+                extra = self.ram[slice(var.offset, var.offset+var.size)]
+            else:
+                extra = self.ram[var.offset]
+            rtn.append(extra)
+        return rtn
+        #return [self.ram[self.file_interpreter.global_store["main_"+variable].offset] for variable in variables]
 
     def test_assign(self):
         self.run_prg("tests/test_assign.txt")
@@ -56,6 +66,10 @@ class TestCompiler(unittest.TestCase):
     def test_recursion(self):
         self.run_prg("tests/test_recursion.txt")
         self.assertEqual(self.get_ram("a"), [120])
+
+    def test_complex(self):
+        self.run_prg("tests/test_complex.txt")
+        self.assertEqual(self.get_ram("acefb"), [[6,2,1213],2,1213,2,[6,2,9]])
 
 if __name__ == '__main__':
     unittest.main()

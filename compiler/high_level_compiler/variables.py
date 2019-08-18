@@ -118,6 +118,7 @@ class Variable:
         self.name = var["name"]
         self.sub = None
         self.is_pointer = var["_block_name"] == "pointer_type"
+        self.is_reference = False
         self.is_global = var["_global"]
         self.is_array = var["_block_name"] == "array_type"
         self.size = 1
@@ -126,6 +127,7 @@ class Variable:
             self.size = var["size"][1]
         self.offset = None
         self.param_var = param_var
+        self.points_to = self
 
     def __str__(self):
         return self.name
@@ -151,14 +153,43 @@ class ScratchVariable(Variable):
         self.type = type
         self.name = "scratch_%s"%next(id_gen)
         self.is_pointer = False
+        self.is_reference = False
         self.is_global = True
         self.is_array = False
         self.size = 1
         self.being_used = True
+        self.points_to = self
 
     def free(self):
         assert self.being_used, "Attempted to free an already freed scratchpad"
         self.being_used = False
+
+
+class PointerVariable(ScratchVariable):
+    def __init__(self, variable: Variable):
+        self.type = "int"
+        self.is_pointer = True
+        self.is_reference = False
+        self.is_global = True
+        self.is_array = False
+        self.size = 1
+        self.plus = 0
+        self.being_used = True
+        self.name = "*"+variable.name
+        self.points_to = variable
+
+
+class ReferenceVariable(ScratchVariable):
+    def __init__(self, variable: Variable):
+        self.type = "int"
+        self.is_pointer = False
+        self.is_reference = True
+        self.is_global = True
+        self.is_array = False
+        self.size = 1
+        self.being_used = True
+        self.name = "&"+variable.name
+        self.points_to = variable
 
 
 class CustomVariable(Variable):
@@ -166,13 +197,16 @@ class CustomVariable(Variable):
                  name: str,
                  type: str = "int",
                  is_pointer: bool = False,
+                 is_reference: bool = False,
                  is_global: bool = False,
                  is_array: bool = False,
                  size: int = 1):
         self.type = type
         self.name = name
         self.is_pointer = is_pointer
+        self.is_reference = is_reference
         self.is_global = is_global
         self.is_array = is_array
         self.size = size
+        self.points_to = self
 

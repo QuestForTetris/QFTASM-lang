@@ -1,4 +1,4 @@
-from high_level_compiler.variables import VariableStore, Variable, ScratchVariable, CustomVariable, _id_gen
+from high_level_compiler.variables import VariableStore, Variable, ScratchVariable, CustomVariable, PointerVariable, ReferenceVariable, _id_gen
 from tree_builder.tree_builder import build_tree, GrammarTree
 import copy
 import itertools
@@ -43,8 +43,8 @@ class GlobalLocalStoreHelper:
             return SubCallInterpreter(self._global_store, self._local_store, self._inlines, tree["sub_call"])
         elif tree["_block_name"] == "single":
             return SingleInterpreter(self._global_store, self._local_store, self._inlines, tree)
-        elif tree["_block_name"] == "array_index":
-            return ArrayIndexInterpreter(self._global_store, self._local_store, self._inlines, tree)
+        #elif tree["_block_name"] == "array_index":
+            #return ArrayIndexInterpreter(self._global_store, self._local_store, self._inlines, tree)
         assert False, "Failed to assign generic_value {}".format(tree["_block_name"])
 
     def parse_var_literal(self, tree: GrammarTree):
@@ -54,14 +54,24 @@ class GlobalLocalStoreHelper:
         elif tree["_block_name"] == "literal":
             return LiteralInterpreter(tree["generic_literal"])
         elif tree["_block_name"] == "var":
-            return self.get_var(tree["generic_var"])
+            return self.parse_generic_var(tree["generic_var"])
         elif tree["_block_name_2"] == "array":
             return ArrayInterpreter(self._global_store, self._local_store, self._inlines, tree)
         assert False, "Failed to assign var_literal"
 
+    def parse_generic_var(self, tree: GrammarTree):
+        assert tree.name == "generic_var"
+        if tree["_block_name"] == "array_index":
+            return ArrayIndexInterpreter(self._global_store, self._local_store, self._inlines, tree)
+        else:
+            return self.get_var(tree)
+        assert False, "Failed to assign generic_var"
+
     @staticmethod
     def free_scratch(scratch: Variable):
         if isinstance(scratch, ScratchVariable):
+            if isinstance(scratch, PointerVariable):
+                scratch = scratch.points_to
             scratch.free()
 
     @staticmethod
@@ -207,7 +217,7 @@ class FileInterpreter:
                                                         is_pointer=False,
                                                         is_global=True))
         self.global_store.finalise()
-        print(self.global_store)
+        #print(self.global_store)
         return rtn
 
 
@@ -310,19 +320,24 @@ class StmtInterpreter(GlobalLocalStoreHelper):
 class AssignInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, inlines, tree: GrammarTree):
         super().__init__(global_store, local_store, inlines)
-        self.var = self.get_var(tree["generic_var"])
+        self.var = self.parse_generic_var(tree["generic_var"])
         self.value = self.parse_generic_value(tree["generic_value"])
 
     def __repr__(self):
         return str(self.var) + " = " + str(self.value)
 
     def compile(self):
-        rtn, scratch = self.collect_value(self.value)
-        #print("assign",rtn, scratch)
-        if not rtn:
-            rtn.append(("assign", self.var, self.value))
-        if scratch is not self.value:
-            rtn = self.replace_variables(rtn, [scratch], [self.var])
+        rtn, scratch = self.collect_value(self.var)
+        #print("assign",rtn,scratch,type(self.var))
+        rtn_val, scratch_val = self.collect_value(self.value)
+        rtn.extend(rtn_val)
+        if (not rtn_val) or isinstance(self.value, ArrayIndexInterpreter):
+            #print("assign",rtn,scratch,self.value)
+            rtn.append(("assign", scratch, scratch_val))
+        else:
+        #if scratch_val is not self.value:
+            rtn = self.replace_variables(rtn, [scratch_val], [self.var])
+        self.free_scratch(scratch_val)
         self.free_scratch(scratch)
         return rtn
 
@@ -483,10 +498,10 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
         rtn, scratch_1 = self.collect_value(self.value_1)
         extend, scratch_2 = self.collect_value(self.value_2)
         if isinstance(scratch_1, ScratchVariable):
-            self.result = scratch_1
+            self.result = scratch_1.points_to
             self.free_scratch(scratch_2)
         elif isinstance(scratch_2, ScratchVariable):
-            self.result = scratch_2
+            self.result = scratch_2.points_to
             self.free_scratch(scratch_1)
         else:
             self.result = self._global_store.add_scratchpad()
@@ -510,7 +525,7 @@ class SingleInterpreter(GlobalLocalStoreHelper):
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
         if isinstance(scratch, ScratchVariable):
-            self.result = scratch
+            self.result = scratch.points_to
         else:
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
@@ -521,9 +536,8 @@ class SingleInterpreter(GlobalLocalStoreHelper):
 class ArrayIndexInterpreter(GlobalLocalStoreHelper):
     def __init__(self, global_store: VariableStore, local_store: VariableStore, inlines, tree: GrammarTree):
         super().__init__(global_store, local_store, inlines)
-        self.var = self.parse_var_literal(tree["var_literal"])
-        self.index = self.parse_generic_value(tree["generic_value"])
-        #print(self)
+        self.var = self.get_var(tree)
+        self.index = self.parse_generic_value(tree["array_index"]["generic_value"])
 
     def __repr__(self):
         return "%s[%s]" % (self.var, self.index)
@@ -535,7 +549,10 @@ class ArrayIndexInterpreter(GlobalLocalStoreHelper):
         else:
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
-        rtn.append(("array_index", self.var, scratch, self.result))
+        rtn.append(("call_sub", "__ADD__", [ReferenceVariable(self.var), scratch], self.result))
+        #rtn.append(("cast", "pointer", self.result))
+        self.result = PointerVariable(self.result)
+        #rtn.append(("array_index", self.var, scratch, self.result))
         return rtn
 
 

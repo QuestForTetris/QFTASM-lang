@@ -342,12 +342,6 @@
         </block>
     </define>
     <define name="generic_value">
-		<block name="array_index">
-			<stmt name="var_literal"/>
-            <token exact_type="LSQB"/>
-			<stmt name="generic_value"/>
-            <token exact_type="RSQB"/>
-		</block>
         <block name="single">
             <stmt name="single_op"/>
             <stmt name="generic_value"/>
@@ -389,6 +383,9 @@
         <block name="type_var">
             <stmt name="type_var"/>
         </block>
+		<block name="array_index">
+			<stmt name="array_index"/>
+		</block>
         <block name="var">
             <stmt name="var"/>
         </block>
@@ -420,6 +417,14 @@
             <token exact_type="NAME" var="name"/>
         </block>
     </define>
+	<define name="array_index">
+		<block>
+            <token exact_type="NAME" var="name"/>
+            <token exact_type="LSQB"/>
+			<stmt name="generic_value"/>
+            <token exact_type="RSQB"/>
+		</block>
+	</define>
     <define name="var">
         <block>
             <token exact_type="NAME" var="name"/>

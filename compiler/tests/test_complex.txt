@@ -1,0 +1,15 @@
+#include stdint
+
+sub factorial (int num) -> int
+    return num
+
+sub main
+    int c = 9 - 7
+    #d += 14 - 13
+    int a[3] = [4, c, 1213]
+    int e = a[2]
+    a[0] = 6
+    int f = a[(c-1)+0]
+    int b[3] = a
+    b[2] = 9
+    #int a[3] = [4, c+6, 1]

@@ -20,7 +20,6 @@ class FileInterpreter:
             "call_sub": self.call_sub_compiler,
             "return": self.return_compiler,
             "assign": self.assign_interpreter,
-            "array_index": self.array_index_interpreter,
             "if": self.if_interpreter,
             "while": self.while_interpreter,
         }
@@ -132,19 +131,6 @@ class FileInterpreter:
             return ["MLZ -1 {} {}".format(val, res) for val, res in zip(self.parse_variable(value), self.parse_result(variable))]
         return ["MLZ -1 {} {}".format(self.parse_variable(value),
                                       self.parse_result(variable))]
-
-    def array_index_interpreter(self, array, index, value):
-        """
-        Assign a value the corresponding array index
-
-        :param array:
-        :param index:
-        :param value:
-        :return:
-        """
-        # TODO: use pointer and parse_variable
-        return ["ADD {} {} {}".format(str(array.offset), self.parse_variable(index), self.parse_result(value)),
-                "MLZ -1 B{} {}".format(str(value.offset), self.parse_result(value))]
 
     def if_interpreter(self, status, if_id, condition):
         """
@@ -261,9 +247,15 @@ class FileInterpreter:
         if not isinstance(variable, Variable):
             if isinstance(variable, ArrayInterpreter):
                 return [self.parse_variable(var)for var in variable.val]
+            if isinstance(variable, list):
+                return [self.parse_variable(var)for var in variable]
             return str(variable)
         if variable.is_array:
             return ["A"+str(i+variable.offset)for i in range(variable.size)]
+        if variable.is_pointer:
+            return "B"+str(variable.points_to.offset + variable.plus)
+        if variable.is_reference:
+            return str(variable.points_to.offset)
         pointer = "AB"[variable.is_pointer]
         return pointer+str(variable.offset)
 
@@ -276,6 +268,8 @@ class FileInterpreter:
         """
         if variable.is_array:
             return [str(i+variable.offset)for i in range(variable.size)]
+        if variable.is_pointer:
+            return "A"+str(variable.points_to.offset + variable.plus)
         pointer = "A"*variable.is_pointer
         return pointer+str(variable.offset)
 
