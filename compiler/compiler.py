@@ -18,7 +18,7 @@ if __name__ == "__main__":
     """
     high_level_file_interpreter = HighLevelFileInterpreter(build_tree(sys.argv[1]))
     compiled = high_level_file_interpreter.compile()
-    #for c in compiled:
-        #print(c)
-    print(compiled)
+    for c in compiled:
+        print(c)
+    #print(compiled)
     #"""

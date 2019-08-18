@@ -90,5 +90,12 @@ class TestInterpreter(unittest.TestCase):
                         4. MNZ -1 1 5;""")
         self.assertEqual(self.ram[:6], [4, 0, 4, 2, 0, 1])
 
+    def test_point(self):
+        self.run_prg("""0. MNZ -1 3 1;
+                        1. MNZ 1 4 3;
+                        2. MNZ 1 2 4;
+                        4. MNZ -1 C1 5;""")
+        self.assertEqual(self.ram[1:6], [3,0,4,2,2])
+
 if __name__ == '__main__':
     unittest.main()

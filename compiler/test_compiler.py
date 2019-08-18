@@ -69,7 +69,7 @@ class TestCompiler(unittest.TestCase):
 
     def test_complex(self):
         self.run_prg("tests/test_complex.txt")
-        self.assertEqual(self.get_ram("acefb"), [[6,2,1213],2,1213,2,[6,2,9]])
+        self.assertEqual(self.get_ram("caefb"), [2,[6,2,1213],1213,4,[6,2,9]])
 
 if __name__ == '__main__':
     unittest.main()

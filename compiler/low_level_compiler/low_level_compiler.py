@@ -253,7 +253,7 @@ class FileInterpreter:
         if variable.is_array:
             return ["A"+str(i+variable.offset)for i in range(variable.size)]
         if variable.is_pointer:
-            return "B"+str(variable.points_to.offset + variable.plus)
+            return "B"+str(variable.points_to.offset)
         if variable.is_reference:
             return str(variable.points_to.offset)
         pointer = "AB"[variable.is_pointer]
@@ -269,7 +269,7 @@ class FileInterpreter:
         if variable.is_array:
             return [str(i+variable.offset)for i in range(variable.size)]
         if variable.is_pointer:
-            return "A"+str(variable.points_to.offset + variable.plus)
+            return "A"+str(variable.points_to.offset)
         pointer = "A"*variable.is_pointer
         return pointer+str(variable.offset)
 

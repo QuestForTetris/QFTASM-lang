@@ -93,7 +93,7 @@ class Interpreter:
             opcode, operands = qopcode, qoperands
             self.ram._contents[0]+=1
 
-        print("Done!")
+        #print("Done!")
 
 
 class RAM():

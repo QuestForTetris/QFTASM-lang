@@ -173,7 +173,6 @@ class PointerVariable(ScratchVariable):
         self.is_global = True
         self.is_array = False
         self.size = 1
-        self.plus = 0
         self.being_used = True
         self.name = "*"+variable.name
         self.points_to = variable

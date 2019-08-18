@@ -102,7 +102,6 @@ class GlobalLocalStoreHelper:
                 if rtn_type is not None:
                     assert isinstance(vars[-1], ScratchVariable)
                     vars[-1].type = rtn_type
-                #print(operator, vars, inline.rtn_type, rtn_type)
                 for var, cmp_var in itertools.zip_longest(vars, inline.args+[inline.rtn_type]):
                     try:
                         var_type = var.type
@@ -141,8 +140,20 @@ class GlobalLocalStoreHelper:
                                                                                                            var_types[-1]))
         return rtn
 
-    @staticmethod
-    def replace_variables(instructions, find, replace):
+    def replace_op(self, operand, find, zipped_args):
+        if isinstance(operand,list):
+            return [self.replace_op(op, find, zipped_args)for op in operand]
+        modded_operand = None
+        if isinstance(operand, PointerVariable):
+            if operand.points_to in find:
+                operand = PointerVariable(zipped_args[id(operand.points_to)])
+        if operand in find:
+            modded_operand = zipped_args[id(operand)]
+        else:
+            modded_operand = operand
+        return modded_operand
+
+    def replace_variables(self, instructions, find, replace):
         zipped_args = dict(zip(map(id, find), replace))
         modded_operation = []
         for inst in instructions:
@@ -151,10 +162,7 @@ class GlobalLocalStoreHelper:
                 inst = list(inst)
                 inst[2] = [zipped_args.get(id(operand), operand) for operand in inst[2]]
             for operand in inst:
-                if operand in find:
-                    modded_instruction.append(zipped_args[id(operand)])
-                else:
-                    modded_instruction.append(operand)
+                modded_instruction.append(self.replace_op(operand, find, zipped_args))
             modded_operation.append(tuple(modded_instruction))
         return modded_operation
 
@@ -328,15 +336,13 @@ class AssignInterpreter(GlobalLocalStoreHelper):
 
     def compile(self):
         rtn, scratch = self.collect_value(self.var)
-        #print("assign",rtn,scratch,type(self.var))
         rtn_val, scratch_val = self.collect_value(self.value)
         rtn.extend(rtn_val)
         if (not rtn_val) or isinstance(self.value, ArrayIndexInterpreter):
-            #print("assign",rtn,scratch,self.value)
             rtn.append(("assign", scratch, scratch_val))
         else:
         #if scratch_val is not self.value:
-            rtn = self.replace_variables(rtn, [scratch_val], [self.var])
+            rtn = self.replace_variables(rtn, [scratch_val.points_to], [self.var])
         self.free_scratch(scratch_val)
         self.free_scratch(scratch)
         return rtn
@@ -354,7 +360,6 @@ class ModAssignInterpreter(GlobalLocalStoreHelper):
 
     def compile(self):
         rtn, scratch = self.collect_value(self.value)
-        #print("mod assign", rtn, scratch)
         rtn.extend(self.inline_operator([self.operator[:-1], self.var, scratch, self.var]))
         self.free_scratch(scratch)
         return rtn
@@ -494,7 +499,6 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
         return " ".join([str(self.value_1), self.operator, str(self.value_2)])
 
     def compile(self):
-        #print("arith",self.value_1,self.value_2)
         rtn, scratch_1 = self.collect_value(self.value_1)
         extend, scratch_2 = self.collect_value(self.value_2)
         if isinstance(scratch_1, ScratchVariable):
@@ -509,7 +513,6 @@ class ArithmeticInterpreter(GlobalLocalStoreHelper):
             self.free_scratch(scratch_2)
         rtn.extend(extend)
         rtn.extend(self.inline_operator([self.operator, scratch_1, scratch_2, self.result]))
-        #print("arith",rtn,self.result)
         return rtn
 
 
@@ -550,7 +553,9 @@ class ArrayIndexInterpreter(GlobalLocalStoreHelper):
             self.result = self._global_store.add_scratchpad()
             self.free_scratch(scratch)
         rtn.append(("call_sub", "__ADD__", [ReferenceVariable(self.var), scratch], self.result))
+        #rtn.append(("assign", self.result, PointerVariable(self.result)))
         #rtn.append(("cast", "pointer", self.result))
+        #self.result = self.result
         self.result = PointerVariable(self.result)
         #rtn.append(("array_index", self.var, scratch, self.result))
         return rtn
@@ -597,7 +602,6 @@ class ArrayInterpreter(GlobalLocalStoreHelper):
         assert tree["_block_name_2"] == "array"
         self.val = [self.parse_generic_value(tree["generic_value"])]
         self.add_params(tree["arg_list"])
-        #print(self.params)
 
     def __repr__(self):
         return str(self.val)
@@ -618,7 +622,6 @@ class ArrayInterpreter(GlobalLocalStoreHelper):
         for raw in raw_rtn:
             rtn.extend(raw)
         self.result = list(self.result)
-        #print(rtn, self.result)
         return rtn
         #return self.val
 
