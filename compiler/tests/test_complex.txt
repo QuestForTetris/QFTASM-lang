@@ -3,7 +3,7 @@
 sub main
     int c = 9 - 7
     #d += 14 - 13
-    int a[3] = [4, c, 1213]
+    int a[3] = [4, c+1, 1213]
     int e = a[2]
     a[0] = 6
     int f = 2+a[(c-1)+0]

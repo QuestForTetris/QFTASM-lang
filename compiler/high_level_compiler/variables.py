@@ -166,13 +166,14 @@ class ScratchVariable(Variable):
 
 
 class PointerVariable(ScratchVariable):
-    def __init__(self, variable: Variable):
+    def __init__(self, variable: Variable, plus=0):
         self.type = "int"
         self.is_pointer = True
         self.is_reference = False
         self.is_global = True
         self.is_array = False
         self.size = 1
+        self.plus = plus
         self.being_used = True
         self.name = "*"+variable.name
         self.points_to = variable

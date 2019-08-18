@@ -338,7 +338,12 @@ class AssignInterpreter(GlobalLocalStoreHelper):
         rtn, scratch = self.collect_value(self.var)
         rtn_val, scratch_val = self.collect_value(self.value)
         rtn.extend(rtn_val)
-        if (not rtn_val) or isinstance(self.value, ArrayIndexInterpreter):
+        if isinstance(self.value, ArrayInterpreter):
+            assert self.var.is_array, "Left arg needs to be an array"
+            for i in range(self.var.size):
+                scratched = scratch_val[i%len(scratch_val)]
+                rtn.append(("assign", PointerVariable(scratch, plus=i), scratched))
+        elif (not rtn_val) or isinstance(self.value, ArrayIndexInterpreter):
             rtn.append(("assign", scratch, scratch_val))
         else:
         #if scratch_val is not self.value:
